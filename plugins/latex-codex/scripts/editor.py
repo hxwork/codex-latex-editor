@@ -667,7 +667,7 @@ document.querySelector('#git-open').onclick=async()=>{
     gitSnapshot=await request('/git');gitJob=null;gitResolutionRows=[];gitDiscard.hidden=true;
     document.querySelector('#git-summary').textContent=t('{branch} · {count} 个待提交文件',{branch:gitSnapshot.branch,count:gitSnapshot.files.length})+' · Overleaf /'+(gitSnapshot.target?.project||'');
     document.querySelector('#git-files').textContent=gitSnapshot.files.map(file=>file.status+' '+file.path).join('\n')||'没有新草稿；仍可同步远程或已提交的本地修改。';
-    document.querySelector('#git-excluded').textContent=t('已排除编译产物与本地缓存：{count} 个文件',{count:gitSnapshot.excluded.length});
+    document.querySelector('#git-excluded').textContent=t('已排除编译产物、本地缓存及无关文件：{count} 个文件',{count:gitSnapshot.excluded.length});
     gitError.textContent='';gitProgress.textContent='';document.querySelector('#git-conflicts').replaceChildren();
     const button=document.querySelector('#git-submit');button.disabled=false;button.textContent=t('同步到 Overleaf');
     gitDialog.showModal();
@@ -1594,6 +1594,43 @@ def git_run(root, *args):
     return result.stdout
 
 
+def git_upload_allowed(repo, name, deleted=False):
+    """Overleaf accepts paper sources and explicitly referenced compilation assets."""
+    target = Path(repo) / name
+    parts = Path(name).parts
+    generated = any(p in ('.latex-codex', '.vscode', '__pycache__', 'node_modules', '.git') for p in parts)
+    generated |= name.endswith(('.aux', '.bbl', '.blg', '.brf', '.log', '.out', '.toc', '.lof', '.lot', '.bcf', '.run.xml', '.synctex.gz', '.fdb_latexmk', '.fls', '.pyc', '.sqlite3', '.sqlite3-wal', '.sqlite3-shm'))
+    generated |= target.suffix.lower() == '.pdf' and target.with_suffix('.tex').exists()
+    if generated or target.name == '.DS_Store' or target.suffix.lower() in ('.md', '.markdown'):
+        return False
+    if target.suffix.lower() in ('.tex', '.bib', '.bst', '.sty', '.cls', '.bbx', '.cbx', '.lbx', '.def', '.clo'):
+        return True
+    # Removed assets must still be deletable after their TeX references are removed.
+    if deleted and target.suffix.lower() in ('.pdf', '.png', '.jpg', '.jpeg', '.eps', '.svg', '.csv', '.dat', '.txt'):
+        return True
+    for source in Path(repo).rglob('*.tex'):
+        if any(part in ('.git', '.latex-codex', 'node_modules') for part in source.parts):
+            continue
+        try:
+            text = source.read_text(encoding='utf-8')
+        except (OSError, UnicodeError):
+            continue
+        text = re.sub(r'(?<!\\)%[^\n]*', '', text)
+        commands = r'\\(?:includegraphics\*?|includepdf|input|include|lstinputlisting|verbatiminput|pgfplotstableread|addplot)'
+        for match in re.finditer(commands + r'(?:\s*\[[^\]]*\])*\s*\{([^{}]+)\}', text):
+            reference = match.group(1).strip()
+            if '\\' in reference or not reference:
+                continue
+            for base in (source.parent, Path(repo)):
+                path = base / reference
+                if path.resolve() == target.resolve() or (not path.suffix and path.resolve() == target.with_suffix('').resolve()):
+                    return True
+            # graphicspath may relocate an image; require the explicit filename/stem.
+            if Path(reference).name in (target.name, target.stem):
+                return True
+    return False
+
+
 def git_preview(root):
     root = Path(root).resolve()
     repo = Path(os.fsdecode(git_run(root, 'rev-parse', '--show-toplevel')).strip()).resolve()
@@ -1612,12 +1649,7 @@ def git_preview(root):
             raise ValueError('Resolve Git merge conflicts before committing.')
         target = repo / name
         parts = Path(name).parts
-        generated = any(p in ('.latex-codex', '.vscode', '__pycache__', 'node_modules') for p in parts)
-        generated |= name.endswith(('.aux', '.bbl', '.blg', '.brf', '.log', '.out', '.toc', '.lof', '.lot', '.bcf', '.run.xml', '.synctex.gz', '.fdb_latexmk', '.fls', '.pyc', '.sqlite3', '.sqlite3-wal', '.sqlite3-shm'))
-        # A PDF next to its TeX source is a compilation product; figure PDFs remain eligible.
-        generated |= target.suffix.lower() == '.pdf' and target.with_suffix('.tex').exists()
-        generated |= target.name == '.DS_Store'
-        if generated:
+        if not git_upload_allowed(repo, name, deleted='D' in status):
             excluded.append(name)
             continue
         files.append({'path': name, 'status': status})

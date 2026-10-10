@@ -198,6 +198,14 @@ class OverleafSync:
         if self.preview(self.root)['signature'] != self.signature:
             raise ValueError('获取远程更新期间本地文件已变化，请重新预览。')
         self.remote_head = output(self.repo,'rev-parse',self.target['tracking'])
+        # Preview filtering must also cover already committed local changes.
+        from editor import git_upload_allowed
+        base = output(self.repo, 'merge-base', 'HEAD', self.remote_head)
+        committed = run(self.repo, 'diff', '--name-only', '-z', '--diff-filter=ACMRT', base, 'HEAD').stdout
+        blocked = [name for name in committed.decode('utf-8', 'surrogateescape').split('\0')
+                   if name and not git_upload_allowed(self.repo, name)]
+        if blocked:
+            raise ValueError('已有本地提交含不应上传的文件，请先整理提交：' + '、'.join(blocked))
         self.phase('正在保存本地提交并进行三方合并…')
         if initial['files']:
             self.commit(self.root,self.signature,self.message)

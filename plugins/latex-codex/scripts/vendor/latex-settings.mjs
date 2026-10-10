@@ -11,7 +11,7 @@ export const english = {
   '保存到本地 Git 历史；不会推送到远程。':'Save to local Git history; no remote push.',
   '{branch} · {count} 个待提交文件':'{branch} · {count} files to commit',
   '没有需要提交的修改':'No changes to commit',
-  '已排除编译产物与本地缓存：{count} 个文件':'Excluded build products and local caches: {count} files',
+  '已排除编译产物、本地缓存及无关文件：{count} 个文件':'Excluded build products, local caches and unrelated files: {count} files',
   '草稿已变化，请关闭并重新打开 Git 提交。':'Draft changed. Close and reopen Git commit.',
 
   '发送到 DeepSeek 主对话':'Send to DeepSeek main chat',

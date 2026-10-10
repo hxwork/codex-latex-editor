@@ -21,10 +21,16 @@ with TemporaryDirectory() as directory:
     (paper / '.latex-codex' / 'history.sqlite3').write_bytes(b'cache')
     (paper / 'main.bib').write_text('bibliography')
     (paper / 'figure.pdf').write_bytes(b'figure')
-    (paper / 'space [1].md').write_text('note')
+    (paper / 'assets.tex').write_text(r'\includegraphics{figure}')
+    (paper / 'notes.md').write_text('local notes')
+    (paper / 'script.py').write_text('local tooling')
+    (paper / 'unused.png').write_bytes(b'unused')
+    (paper / 'data.csv').write_text('1,2')
+    (paper / 'assets.tex').write_text(r'\includegraphics{figure}\pgfplotstableread{data.csv}')
+    (paper / 'space [1].tex').write_text('note')
     preview = git_preview(paper)
-    assert {x['path'] for x in preview['files']} == {'paper/main.tex', 'paper/main.bib', 'paper/figure.pdf', 'paper/space [1].md'}
-    assert len(preview['excluded']) == 2
+    assert {x['path'] for x in preview['files']} == {'paper/main.tex', 'paper/main.bib', 'paper/figure.pdf', 'paper/space [1].tex', 'paper/assets.tex', 'paper/data.csv'}
+    assert len(preview['excluded']) == 5
     (paper / 'main.tex').write_text('another edit')
     try:
         git_commit(paper, preview['signature'], 'Stale')
@@ -32,10 +38,12 @@ with TemporaryDirectory() as directory:
     except FileConflict:
         pass
     result = git_commit(paper, git_preview(paper)['signature'], 'Paper update')
-    assert result['count'] == 4
+    assert result['count'] == 6
     assert git_run(root, 'diff', '--cached', '--name-only').decode().strip() == 'other.txt'
     assert git_run(root, 'show', 'HEAD:other.txt') == b'original'
     assert not git_preview(paper)['files']
+    assert (paper / 'notes.md').exists()
+    assert b'paper/notes.md' not in git_run(root, 'ls-tree', '-r', '--name-only', 'HEAD')
     (paper / 'main.bib').unlink()
     git_commit(paper, git_preview(paper)['signature'], 'Remove bibliography')
     assert b'paper/main.bib' not in git_run(root, 'ls-tree', '-r', '--name-only', 'HEAD')
@@ -52,7 +60,7 @@ with TemporaryDirectory() as directory:
     git_run(root, 'init', '-q')
     git_run(root, 'config', 'user.name', 'Plugin test')
     git_run(root, 'config', 'user.email', 'test@example.invalid')
-    source = root / 'main.md'; source.write_text('original')
+    source = root / 'main.tex'; source.write_text('original')
     git_run(root, 'add', '.')
     git_run(root, 'commit', '-qm', 'Initial')
     source.write_text('modified')

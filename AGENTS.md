@@ -136,3 +136,5 @@ Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于
 三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Codex CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。
 
 实现为 scripts/overleaf_sync.py 与 editor.py。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。
+
+Overleaf 上传默认排除 Markdown、脚本、未引用资源和杂项文件。TeX / 文献 / 样式作为论文源码；其他资源须由 TeX 显式引用。不将本地笔记随文稿上传。
