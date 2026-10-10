@@ -1,6 +1,19 @@
 import {translations} from './latex-locales.mjs';
 
 export const english = {
+  '同步到 Overleaf':'Sync to Overleaf',
+  '自动获取远程更新、合并并推送；遇到冲突会先分析。':'Fetch, merge and push; analyze conflicts before proceeding.',
+  'Overleaf · {commit} · 已同步':'Overleaf · {commit} · Synced',
+
+  'Git 提交':'Git commit',
+  '提交说明':'Commit message',
+  '提交':'Commit',
+  '保存到本地 Git 历史；不会推送到远程。':'Save to local Git history; no remote push.',
+  '{branch} · {count} 个待提交文件':'{branch} · {count} files to commit',
+  '没有需要提交的修改':'No changes to commit',
+  '已排除编译产物与本地缓存：{count} 个文件':'Excluded build products and local caches: {count} files',
+  '草稿已变化，请关闭并重新打开 Git 提交。':'Draft changed. Close and reopen Git commit.',
+
   '发送到 DeepSeek 主对话':'Send to DeepSeek main chat',
   '正在转交主对话…':'Sending to main chat…',
   '批注已转交 DeepSeek 主对话。':'Comments sent to DeepSeek main chat.',

@@ -32,6 +32,7 @@ from project_review import ProjectReview, review_hunks
 from proofread import color_preamble, document_start, proofread_source
 from markdown_source import SOURCE_EXTENSIONS, document_type, markdown_resource
 from obsidian_tex import convert as note_to_tex, find_vault_root
+from overleaf_sync import OverleafSync, destination
 
 HISTORY_PDF_CACHE_BYTES = 256 * 1024 * 1024
 HISTORY_PDF_CACHE_DAYS = 30
@@ -159,8 +160,9 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 <header id="app-toolbar"><button id="file-menu-button" class="icon-button" aria-label="文件" data-i18n-aria-label="文件" title="文件" data-i18n-title="文件" popovertarget="file-menu" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H5v20h14V7zM14 2v6h5"/></svg></button><button id="native-annotation-open" class="icon-button" disabled aria-pressed="false" aria-label="原生批注选区" data-i18n-aria-label="原生批注选区" title="原生批注选区" data-i18n-title="原生批注选区"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg></button><span id="status" role="status" aria-live="polite" data-i18n="正在打开…">正在打开…</span>
 <span id="native-annotation-status" hidden role="status" aria-live="polite"><span data-i18n="按 Esc 返回编辑">按 Esc 返回编辑</span><span class="native-annotation-feedback" data-i18n="已保存批注可在主对话统一发送。" style="margin-left:8px">已保存批注可在主对话统一发送。</span></span>
 <button id="annotations-toggle" hidden popovertarget="annotations-review" aria-expanded="false">批注 · 0</button><button id="annotations-stop" hidden data-i18n="停止">停止</button><button id="annotations-send" hidden disabled aria-busy="false" title="发送全部批注" data-i18n-title="发送全部批注">Send</button>
-<button id="project-review-open" popovertarget="project-review-menu" hidden></button><button id="history-open" class="icon-button" disabled><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2"/></svg><span data-i18n="历史">历史</span></button><button id="settings-menu-button" class="icon-button" popovertarget="settings-menu" aria-label="设置" data-i18n-aria-label="设置" title="设置" data-i18n-title="设置" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></header>
+<button id="project-review-open" popovertarget="project-review-menu" hidden></button><button id="git-open" disabled data-i18n="同步到 Overleaf">同步到 Overleaf</button><button id="history-open" class="icon-button" disabled><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2"/></svg><span data-i18n="历史">历史</span></button><button id="settings-menu-button" class="icon-button" popovertarget="settings-menu" aria-label="设置" data-i18n-aria-label="设置" title="设置" data-i18n-title="设置" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></header>
 <div id="file-menu" class="toolbar-menu" popover="auto" aria-label="文件" data-i18n-aria-label="文件"><button id="open" data-i18n="打开文件">打开文件</button><button id="project-open" data-i18n="项目设置">项目设置</button><button id="reload" data-i18n="重新读取文件">重新读取文件</button><a href="/pdf" download="document.pdf" data-i18n="下载 PDF">下载 PDF</a></div>
+<dialog id="git-dialog" aria-labelledby="git-title" style="width:min(960px,90vw);max-height:90vh;overflow:auto"><h3 id="git-title" data-i18n="同步到 Overleaf">同步到 Overleaf</h3><p id="git-summary"></p><pre id="git-files" style="max-height:180px;overflow:auto;white-space:pre-wrap"></pre><p id="git-excluded"></p><form id="git-form"><label for="git-message" data-i18n="提交说明">提交说明</label><input id="git-message" required maxlength="2000" value="Update paper" style="width:100%;box-sizing:border-box"><p data-i18n="自动获取远程更新、合并并推送；遇到冲突会先分析。">自动获取远程更新、合并并推送；遇到冲突会先分析。</p><p id="git-progress" role="status" aria-live="polite"></p><div id="git-conflicts"></div><p id="git-error" role="alert"></p><button id="git-discard" type="button" hidden>放弃本次合并，重新检查</button><div class="history-dialog-actions"><button id="git-cancel" type="button" data-i18n="取消">取消</button><button id="git-submit" type="submit" data-i18n="同步到 Overleaf">同步到 Overleaf</button></div></form></dialog>
 <dialog id="project-dialog" aria-labelledby="project-title"><h3 id="project-title" data-i18n="项目设置">项目设置</h3><form id="project-form"><label for="project-root" data-i18n="项目根目录">项目根目录</label><input id="project-root" required><label for="project-entry" data-i18n="主编译文件">主编译文件</label><input id="project-entry" required placeholder="main.tex"><p data-i18n="选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。">选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。</p><p id="project-error" role="alert"></p><div class="history-dialog-actions"><button id="project-cancel" type="button" data-i18n="取消">取消</button><button id="project-apply" type="submit" data-i18n="应用">应用</button></div></form></dialog>
 <div id="settings-menu" class="toolbar-menu" popover="auto" aria-label="设置" data-i18n-aria-label="设置"><label for="language"><span data-i18n="语言">语言</span><select id="language" aria-label="语言" data-i18n-aria-label="语言"><option value="system" data-i18n="跟随系统">跟随系统</option><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="ja">日本語</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option></select></label><small id="language-help" data-i18n="跟随系统语言；无法识别时使用英文。可在齿轮设置中手动切换。">跟随系统语言；无法识别时使用英文。可在齿轮设置中手动切换。</small><label for="editor-mode"><span data-i18n="编辑模式">编辑模式</span><select id="editor-mode" aria-label="编辑模式" data-i18n-aria-label="编辑模式"><option value="default" data-i18n="普通编辑">普通编辑</option><option value="vim">Vim</option><option value="emacs">Emacs</option></select></label><label for="source-font-size"><span data-i18n="源码字号">源码字号</span><input id="source-font-size" type="number" min="10" max="32" step="1" value="14" aria-label="源码字号" data-i18n-aria-label="源码字号"><span>px</span></label><label for="pdf-box-auto-comment" class="checkbox-setting"><input id="pdf-box-auto-comment" type="checkbox"><span data-i18n="框选后自动弹出 PDF 批注对话框（无需右键）">框选后自动弹出 PDF 批注对话框（无需右键）</span></label><div class="proofread-settings" role="group" aria-label="Proofread"><label for="proofread-editor" class="checkbox-setting"><input id="proofread-editor" type="checkbox" checked><span data-i18n="编辑器校对（Proofread）">编辑器校对（Proofread）</span></label><label for="proofread-pdf" class="checkbox-setting"><input id="proofread-pdf" type="checkbox" checked><span data-i18n="PDF 校对（Proofread）">PDF 校对（Proofread）</span></label></div><label for="proofread-project" class="checkbox-setting"><input id="proofread-project" type="checkbox"><span data-i18n="项目修改校对（主对话 / 外部修改）">项目修改校对（主对话 / 外部修改）</span></label><small data-i18n="记录项目 TeX 修改，逐处 Keep / Undo；手动输入照常保存。">记录项目 TeX 修改，逐处 Keep / Undo；手动输入照常保存。</small><small data-i18n="都关闭时，Send 直接应用新修改；已有建议仍可在批注列表确认。">都关闭时，Send 直接应用新修改；已有建议仍可在批注列表确认。</small><label for="outline-style"><span data-i18n="章节目录样式">章节目录样式</span><select id="outline-style" aria-label="章节目录样式" data-i18n-aria-label="章节目录样式"><option value="wheel" data-i18n="轮盘">轮盘</option><option value="cards" data-i18n="章节卡片 + 小节轮盘">章节卡片 + 小节轮盘</option><option value="timeline" data-i18n="章节时间线">章节时间线</option></select></label><div class="theme-setting"><div class="theme-setting-heading"><label for="theme" data-i18n="配色">配色</label><button id="theme-customize" class="icon-button" aria-label="截图生成主题" data-i18n-aria-label="截图生成主题" title="截图生成主题" data-i18n-title="截图生成主题"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></div><select id="theme" aria-label="配色" data-i18n-aria-label="配色"><optgroup label="浅色" data-i18n-label="浅色"><option value="eclipse" data-i18n="Eclipse · 白底">Eclipse · 白底</option><option value="idea" data-i18n="IDEA · 白底">IDEA · 白底</option><option value="neo" data-i18n="Neo · 简洁白">Neo · 简洁白</option><option value="base16-light" data-i18n="Base16 · 浅灰">Base16 · 浅灰</option><option value="solarized-light" data-i18n="Solarized · 暖白">Solarized · 暖白</option></optgroup><optgroup label="深色" data-i18n-label="深色"><option value="cobalt" data-i18n="Cobalt · 深蓝">Cobalt · 深蓝</option><option value="dracula" data-i18n="Dracula · 紫灰">Dracula · 紫灰</option><option value="monokai" data-i18n="Monokai · 炭黑">Monokai · 炭黑</option><option value="nord" data-i18n="Nord · 冷灰">Nord · 冷灰</option><option value="material-darker" data-i18n="Material · 深灰">Material · 深灰</option><option value="material-palenight" data-i18n="Palenight · 蓝紫">Palenight · 蓝紫</option><option value="ayu-dark" data-i18n="Ayu · 深夜">Ayu · 深夜</option><option value="gruvbox-dark" data-i18n="Gruvbox · 暖黑">Gruvbox · 暖黑</option><option value="solarized-dark" data-i18n="Solarized · 深青">Solarized · 深青</option></optgroup></select></div><label for="chat-color"><span data-i18n="修改标记颜色">修改标记颜色</span><select id="chat-color" aria-label="修改标记颜色" data-i18n-aria-label="修改标记颜色"><option value="" data-i18n="无">无</option><option value="blue" data-i18n="蓝色">蓝色</option><option value="red" data-i18n="红色">红色</option><option value="teal" data-i18n="青色">青色</option><option value="magenta" data-i18n="洋红">洋红</option><option value="orange" data-i18n="橙色">橙色</option><option value="violet" data-i18n="紫色">紫色</option></select></label><label for="revision-color"><span data-i18n="当前用户修订色">当前用户修订色</span><select id="revision-color" aria-label="当前用户修订色" data-i18n-aria-label="当前用户修订色"><option value="orange" data-i18n="橙色">橙色</option><option value="blue" data-i18n="蓝色">蓝色</option><option value="purple" data-i18n="紫色">紫色</option><option value="green" data-i18n="绿色">绿色</option><option value="red" data-i18n="红色">红色</option></select></label><button id="settings-save" data-i18n="保存设置">保存设置</button><small id="settings-save-status" role="status" data-i18n="设置更改会自动保存，并在下次打开时恢复。">设置更改会自动保存，并在下次打开时恢复。</small><button id="chat-view" aria-controls="chat-panel" data-i18n="查看对话">查看对话</button><details id="chat-context-settings"><summary data-i18n="上下文记录">上下文记录</summary><pre id="chat-selection"></pre><button id="chat-use-selection" data-i18n="使用当前选区">使用当前选区</button><small id="chat-context" data-i18n="携带论文全文；正在读取主对话…">携带论文全文；正在读取主对话…</small></details></div>
 <dialog id="theme-dialog" aria-labelledby="theme-dialog-title">
@@ -502,7 +504,7 @@ function showCompileError(error){
   editor.setCursor(cursor);editor.focus();editor.scrollIntoView(cursor,editor.getScrollInfo().clientHeight/2);
   setText(status,'编译失败 · 第 {line} 行：{message}',error);
 }
-function updateSyncControls(){const disabled=busy||syncBusy||editor.getOption('readOnly');forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;}
+function updateSyncControls(){const disabled=busy||syncBusy||editor.getOption('readOnly');forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;}
 proofreadPdf=attachProofreadPdf({request,
   capture:()=>({latex:documentType==='latex',enabled:preferences.getItem('latex-codex-proofread-pdf')!=='off',path:document.querySelector('#filename').title,version,source:editor.getValue(),doc:editor.getDoc(),range:(from,to)=>editor.getRange(from,to),index:pos=>editor.indexFromPos(pos)}),
   display:async(data,current)=>{const displayed=await refreshPreview(data,current);if(displayed!==false&&current()){pdfVersion='';compiledLabels={};compiledCitations={};showCompileLog(false);updateSyncControls();selectionChat.refreshAnnotations();}return displayed;},
@@ -597,6 +599,103 @@ document.querySelector('#project-form').onsubmit=async event=>{
   finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();document.querySelector('#project-apply').disabled=false;}
   if(!projectDialog.open)await compile();
 };
+const gitDialog=document.querySelector('#git-dialog');
+let gitSnapshot=null,gitJob=null,gitResolutionRows=[];
+const gitDiscard=document.querySelector('#git-discard');
+gitDiscard.onclick=async()=>{if(busy||!gitJob)return;try{await request('/git/discard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:gitJob.id})});gitDialog.close();await document.querySelector('#git-open').onclick();}catch(error){gitError.textContent=error.message;}};
+const gitError=document.querySelector('#git-error'),gitProgress=document.querySelector('#git-progress');
+document.querySelector('#git-cancel').onclick=()=>gitDialog.close();
+gitDialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
+function renderGitConflicts(data){
+  const area=document.querySelector('#git-conflicts');area.replaceChildren();gitResolutionRows=[];
+  if(data.analysis_warning){const warning=document.createElement('p');warning.textContent=data.analysis_warning;area.append(warning);}
+  for(const file of data.files||[]){
+    const panel=document.createElement('section');panel.style.cssText='border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0';
+    const heading=document.createElement('h4');heading.textContent=file.path;panel.append(heading);
+    for(const item of (data.conflicts||[]).filter(item=>item.path===file.path)){
+      const analysis=item.analysis||{},detail=document.createElement('details');detail.open=true;
+      const label=document.createElement('summary');
+      const severity={minor:'次要',critical:'关键',uncertain:'待核对'}[analysis.severity]||'待核对';
+      label.textContent='#'+item.id+' · 合并稿第 '+item.line+' 行 · '+severity+' · '+(analysis.method==='codex'?'Codex 语义分析':'保守初判')+' · 置信度 '+(analysis.confidence||'low');
+      detail.append(label);
+      const reason=document.createElement('p');reason.textContent=(analysis.reason||'')+' '+(analysis.recommendation||'');detail.append(reason);
+      const comparison=document.createElement('div');comparison.style.cssText='display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px';
+      for(const [key,title] of [['base','共同基线'],['local','本地修改'],['remote','Overleaf 修改']]){
+        const column=document.createElement('div'),caption=document.createElement('strong'),text=document.createElement('pre');caption.textContent=title;text.textContent=item[key]||'（不存在 / 无文本）';text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto';column.append(caption,text);comparison.append(column);
+      }
+      detail.append(comparison);panel.append(detail);
+    }
+    const label=document.createElement('label');label.textContent='该文件的合并结果：';
+    const choice=document.createElement('select');choice.setAttribute('aria-label',file.path+' 合并方式');
+    for(const [value,text] of [['','请选择处理方式'],['manual','手动合并三方修改'],['local','保留本地整个文件'],['remote','保留 Overleaf 整个文件']]){
+      if(value==='manual'&&!file.editable)continue;
+      const option=document.createElement('option');option.value=value;option.textContent=text;choice.append(option);
+    }
+    const source=document.createElement('textarea');source.value=file.merged||'';source.setAttribute('aria-label',file.path+' 手动合并文本');source.style.cssText='display:none;width:100%;height:240px;box-sizing:border-box;font:12px monospace';
+    choice.onchange=()=>{source.style.display=choice.value==='manual'?'block':'none';};
+    panel.append(label,choice,source);area.append(panel);gitResolutionRows.push({path:file.path,choice,source});
+  }
+}
+async function followGitJob(id){
+  for(;;){
+    const data=await request('/git/job?id='+encodeURIComponent(id));gitJob=data;
+    gitProgress.textContent=data.phase||'';
+    if(data.status==='running'){await new Promise(resolve=>setTimeout(resolve,700));continue;}
+    if(data.status==='conflicts'){gitDiscard.hidden=false;renderGitConflicts(data);document.querySelector('#git-submit').textContent='应用所选合并并推送';return;}
+    if(data.status==='error')throw new Error(data.error||data.phase);
+    if(data.status==='done'){
+      gitDialog.close();
+      // Remote content may have changed the active source; adopt it after the transaction completes.
+      try{
+        const state=await request('/state');
+        if(state.source.replace(/\r\n/g,'\n')!==editor.getValue()||state.path!==document.querySelector('#filename').title)display(state,true);
+        else{version=state.version;projectVersion=state.project_version||projectVersion;mainSource=state.main_source||'';mathHover.setMainSource(mainSource);sourcePicker.update({files:state.files||[],path:state.path,mainFile});}
+        if(!state.sync){pdfVersion='';compiledLabels={};compiledCitations={};}
+      }catch(error){setText(status,'Overleaf 已同步；请重新打开当前源码：{message}',{message:error.message});return;}
+      setText(status,'Overleaf · {commit} · 已同步',{commit:data.commit});return;
+    }
+    throw new Error('同步任务状态无效。');
+  }
+}
+document.querySelector('#git-open').onclick=async()=>{
+  if(busy||syncBusy||conflict||selectionChat.busy)return;
+  if(selectionChat.hasAnnotations){setText(status,'请先处理未完成批注，再同步远程修改。');return;}
+  if(editor.getValue()!==saved)await compile(false);
+  if(busy||conflict||editor.getValue()!==saved)return;
+  clearTimeout(timer);busy=true;updateSyncControls();
+  try{
+    gitSnapshot=await request('/git');gitJob=null;gitResolutionRows=[];gitDiscard.hidden=true;
+    document.querySelector('#git-summary').textContent=t('{branch} · {count} 个待提交文件',{branch:gitSnapshot.branch,count:gitSnapshot.files.length})+' · Overleaf /'+(gitSnapshot.target?.project||'');
+    document.querySelector('#git-files').textContent=gitSnapshot.files.map(file=>file.status+' '+file.path).join('\n')||'没有新草稿；仍可同步远程或已提交的本地修改。';
+    document.querySelector('#git-excluded').textContent=t('已排除编译产物与本地缓存：{count} 个文件',{count:gitSnapshot.excluded.length});
+    gitError.textContent='';gitProgress.textContent='';document.querySelector('#git-conflicts').replaceChildren();
+    const button=document.querySelector('#git-submit');button.disabled=false;button.textContent=t('同步到 Overleaf');
+    gitDialog.showModal();
+    if(gitSnapshot.job&&['running','conflicts'].includes(gitSnapshot.job.status)){
+      editor.setOption('readOnly',true);button.disabled=true;document.querySelector('#git-cancel').disabled=true;
+      await followGitJob(gitSnapshot.job.id);
+    }
+  }catch(error){gitError.textContent=error.message;setText(status,'Git: {message}',{message:error.message});}
+  finally{busy=false;editor.setOption('readOnly',false);document.querySelector('#git-submit').disabled=gitJob?.status==='error';document.querySelector('#git-cancel').disabled=false;updateSyncControls();}
+};
+document.querySelector('#git-form').onsubmit=async event=>{
+  event.preventDefault();if(busy||syncBusy||conflict||!gitSnapshot)return;
+  const button=document.querySelector('#git-submit'),cancel=document.querySelector('#git-cancel');
+  clearTimeout(timer);busy=true;editor.setOption('readOnly',true);button.disabled=true;cancel.disabled=true;gitDiscard.disabled=true;updateSyncControls();gitError.textContent='';
+  try{
+    if(editor.getValue()!==saved)throw new Error(t('草稿已变化，请关闭并重新打开 Git 提交。'));
+    let job;
+    if(gitJob?.status==='conflicts'){
+      const resolutions=gitResolutionRows.map(row=>({path:row.path,choice:row.choice.value,source:row.source.value}));
+      job=await request('/git/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:gitJob.id,resolutions})});
+    }else{
+      job=await request('/git/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signature:gitSnapshot.signature,message:document.querySelector('#git-message').value,path:document.querySelector('#filename').title,version,source:saved})});
+    }
+    await followGitJob(job.id);
+  }catch(error){gitError.textContent=error.message;}
+  finally{busy=false;editor.setOption('readOnly',false);button.disabled=gitJob?.status==='error';cancel.disabled=false;gitDiscard.disabled=false;updateSyncControls();if(!conflict&&autoCompile.checked&&pdfVersion!==version)scheduleSave();}
+};
+
 async function clearPreview(){endSpacePan();pdfOutline.clear();pdfViewer.setDocument(null);pdfLinks.setDocument(null);if(pdfTask)await pdfTask.destroy();pdfTask=null;pdfBuild='';log.textContent='';}
 async function openFile(){
   if(busy||syncBusy)return;
@@ -1487,6 +1586,68 @@ def snapshot(path):
     return {'source': raw.decode('utf-8-sig'), 'version': hashlib.sha256(str(path).encode() + b'\0' + raw).hexdigest(), 'name': path.name, 'path': str(path), 'document_type': document_type(path)}
 
 
+def git_run(root, *args):
+    result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, timeout=30,
+                            env={**os.environ, 'GIT_LITERAL_PATHSPECS': '1'})
+    if result.returncode:
+        raise ValueError(result.stderr.decode('utf-8', 'replace').strip() or 'Git command failed.')
+    return result.stdout
+
+
+def git_preview(root):
+    root = Path(root).resolve()
+    repo = Path(os.fsdecode(git_run(root, 'rev-parse', '--show-toplevel')).strip()).resolve()
+    head = git_run(repo, 'rev-parse', 'HEAD').decode().strip()
+    if git_run(repo, 'ls-files', '--unmerged'):
+        raise ValueError('Resolve Git merge conflicts before committing.')
+    scope = root.relative_to(repo).as_posix()
+    raw = git_run(repo, 'status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', scope)
+    files, excluded = [], []
+    digest = hashlib.sha256(head.encode())
+    for record in raw.split(b'\0'):
+        if not record:
+            continue
+        status, name = record[:2].decode(), os.fsdecode(record[3:])
+        if any(c in status for c in 'U') or status in ('AA', 'DD'):
+            raise ValueError('Resolve Git merge conflicts before committing.')
+        target = repo / name
+        parts = Path(name).parts
+        generated = any(p in ('.latex-codex', '.vscode', '__pycache__', 'node_modules') for p in parts)
+        generated |= name.endswith(('.aux', '.bbl', '.blg', '.brf', '.log', '.out', '.toc', '.lof', '.lot', '.bcf', '.run.xml', '.synctex.gz', '.fdb_latexmk', '.fls', '.pyc', '.sqlite3', '.sqlite3-wal', '.sqlite3-shm'))
+        # A PDF next to its TeX source is a compilation product; figure PDFs remain eligible.
+        generated |= target.suffix.lower() == '.pdf' and target.with_suffix('.tex').exists()
+        generated |= target.name == '.DS_Store'
+        if generated:
+            excluded.append(name)
+            continue
+        files.append({'path': name, 'status': status})
+        digest.update(record)
+        if target.is_symlink():
+            digest.update(os.fsencode(os.readlink(target)))
+        elif target.is_file():
+            with target.open('rb') as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                    digest.update(chunk)
+    return {'root': str(repo), 'branch': git_run(repo, 'rev-parse', '--abbrev-ref', 'HEAD').decode().strip(),
+            'files': files, 'excluded': excluded, 'signature': digest.hexdigest()}
+
+
+def git_commit(root, signature, message):
+    if not isinstance(message, str) or not message.strip() or len(message) > 2000 or '\0' in message:
+        raise ValueError('Enter a commit message (maximum 2000 characters).')
+    preview = git_preview(root)
+    if preview['signature'] != signature:
+        raise FileConflict('Files changed since preview. Reopen Git commit to review the latest changes.')
+    names = [item['path'] for item in preview['files']]
+    if not names:
+        raise ValueError('No project changes to commit.')
+    repo = preview['root']
+    # --only commits the selected working-tree files and preserves unrelated staged changes.
+    git_run(repo, 'add', '--', *names)
+    git_run(repo, 'commit', '--only', '-m', message.strip(), '--', *names)
+    return {'commit': git_run(repo, 'rev-parse', '--short', 'HEAD').decode().strip(), 'count': len(names)}
+
+
 class FileConflict(ValueError):
     pass
 
@@ -1749,7 +1910,8 @@ def compile_tex(path, build, source, entry=None, project_root=None, directory=No
         for product in [*Path(build).rglob('*.aux'), aux.with_suffix('.bbl'), bcf, cached]:
             product.unlink(missing_ok=True)
         ok = run(command)
-    processor = 'biber' if bcf.is_file() else 'bibtex' if aux.exists() and '\\bibdata{' in aux.read_text(encoding='utf-8', errors='replace') else None
+    aux_text = compiled_aux_text(aux) if aux.exists() else ''
+    processor = 'biber' if bcf.is_file() else 'bibtex' if '\\bibdata{' in aux_text and '\\citation{' in aux_text else None
     if ok and processor:
         executable = tex_tool(processor)
         if not executable:
@@ -1763,7 +1925,7 @@ def compile_tex(path, build, source, entry=None, project_root=None, directory=No
             if processor == 'biber':
                 ok = run([executable, '--input-directory', str(build), '--output-directory', str(build), path.stem], cwd=directory, env=env)
             else:
-                ok = run([executable, str(aux.with_suffix(''))], cwd=directory, env=env)
+                ok = run([executable, path.stem], cwd=build, env=env)
             if ok:
                 cached.write_text(signature or '')
                 ok = run(command) and run(command)
@@ -2511,7 +2673,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
             return True
 
         def do_GET(self):
-            if urlsplit(self.path).path == '/' or self.path.startswith('/vendor/'):
+            if urlsplit(self.path).path in ('/', '/git/job') or self.path.startswith('/vendor/'):
                 self.get()
             elif self.path.startswith('/history/pdf/'):
                 with history_pdf_lock:
@@ -2535,6 +2697,17 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     self.reply(200, page.encode('utf-8'), 'text/html; charset=utf-8')
                 except (OSError, sqlite3.Error) as error:
                     self.reply(500, {'error': str(error)})
+            elif route == '/git/job':
+                job = self.server.git_sync
+                if not job or parse_qs(parsed.query).get('id',[''])[0] != job.id:
+                    self.reply(404, {'error':'同步任务不存在，请重新打开同步预览。'})
+                else:
+                    self.reply(200, job.result)
+            elif route == '/git':
+                try:
+                    self.reply(200, {**git_preview(root), 'target':destination(git_preview(root)['root']), 'job':self.server.git_sync.result if self.server.git_sync and self.server.git_sync.root == root else None})
+                except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+                    self.reply(400, {'error': str(error)})
             elif route == '/project-review':
                 try:
                     self.reply(200, project_reviews())
@@ -2671,18 +2844,51 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
             nonlocal path, history, root, main_file
             if not self.local():
                 return
-            if self.path not in ('/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
+            if self.path not in ('/git/discard', '/git/sync', '/git/resolve', '/git/commit', '/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
                 self.reply(404, {'error': 'Not found.'})
                 return
             try:
                 size = int(self.headers.get('Content-Length', '0'))
-                limit = 32 * 1024 * 1024 if self.path in ('/history/pdf-cache', '/history/pdf') else 8_000_000 if self.path in ('/save','/proofread') else 1_000_000
+                limit = 32 * 1024 * 1024 if self.path in ('/history/pdf-cache', '/history/pdf') else 8_000_000 if self.path in ('/save','/proofread','/git/resolve') else 1_000_000
                 if self.headers.get('Content-Type') != 'application/json' or not 0 < size <= limit:
                     raise ValueError('JSON request exceeds the size limit.')
                 payload = self.rfile.read(size)
                 data = json.loads(payload)
                 if not isinstance(data, dict):
                     raise ValueError('Expected a JSON object.')
+                if self.path == '/git/discard':
+                    job = self.server.git_sync
+                    if not job or data.get('id') != job.id or job.result['status'] == 'running':
+                        raise FileConflict('同步任务已变化或仍在运行。')
+                    job.cleanup()
+                    self.server.git_sync = None
+                    self.reply(200, {'discarded':True})
+                    return
+                if self.path == '/git/resolve':
+                    job = self.server.git_sync
+                    if not job or data.get('id') != job.id or job.root != root:
+                        raise FileConflict('同步项目或任务已变化。')
+                    job.resolve(data.get('resolutions'))
+                    self.reply(200, {'id':job.id,'status':'running'})
+                    return
+                if self.path == '/git/sync':
+                    current = snapshot(path)
+                    if data.get('path') != str(path) or data.get('version') != current['version'] or data.get('source') != current['source'].replace('\r\n', '\n'):
+                        raise FileConflict('Current source changed. Save and reopen Overleaf sync.')
+                    existing = self.server.git_sync
+                    if existing and existing.result['status'] in ('running','conflicts'):
+                        raise FileConflict('已有同步或未处理的冲突，请在同步窗口继续。')
+                    job = OverleafSync(root,data.get('signature'),data.get('message'),git_preview,git_commit,state_lock)
+                    self.server.git_sync = job
+                    job.start()
+                    self.reply(200, {'id':job.id,'status':'running'})
+                    return
+                if self.path == '/git/commit':
+                    current = snapshot(path)
+                    if data.get('path') != str(path) or data.get('version') != current['version'] or data.get('source') != current['source'].replace('\r\n', '\n'):
+                        raise FileConflict('Current source changed. Save and reopen Git commit.')
+                    self.reply(200, git_commit(root, data.get('signature'), data.get('message')))
+                    return
                 if self.path == '/preferences':
                     if data.get('latex-codex-proofread-project') == 'on':
                         project_reviews(True)
@@ -3062,6 +3268,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
     server.review = ProjectReview(root)
     if server.preferences.read().get('latex-codex-proofread-project') == 'on':
         project_reviews()
+    server.git_sync = None
     server.chat = None
     server.history_summary = None
     server.history_pdfs = {}

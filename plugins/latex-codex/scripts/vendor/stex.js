@@ -114,7 +114,7 @@
       // Do we look like '\command' ?  If so, attempt to apply the plugin 'command'
       if (source.match(/^\\[a-zA-Z@]+/)) {
         var cmdName = source.current().slice(1);
-        plug = references.test(cmdName) ? addPluginPattern(cmdName, "reference", ["reference", "reference"]) :
+        plug = references.test(cmdName) ? addPluginPattern(cmdName, "reference reference-command", ["reference", "reference"]) :
           plugins.hasOwnProperty(cmdName) ? plugins[cmdName] : plugins["DEFAULT"];
         plug = new plug();
         pushCommand(state, plug);
@@ -199,7 +199,7 @@
         var command = source.current().slice(1);
         if (references.test(command)) {
           state.mathReference = true;
-          return "reference";
+          return "reference reference-command";
         }
         if (/^(?:text|textrm|textnormal|textbf|textit|mbox)$/.test(command)) {
           var resume = state.f;

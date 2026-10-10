@@ -13,7 +13,7 @@ from editor import make_server
 
 
 with tempfile.TemporaryDirectory() as directory:
-    path = Path(directory) / 'main.tex'
+    path = Path(directory).resolve() / 'main.tex'
     path.write_text('Original.', encoding='utf-8')
     with patch('editor.compiler', return_value=('xelatex', 'unused')), patch('editor.shutil.which', return_value='unused'):
         server = make_server(path, main_thread='')

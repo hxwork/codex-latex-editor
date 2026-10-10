@@ -1203,6 +1203,52 @@ Every square is nonnegative.
   assert.equal(pdfNavigation.previous,element('#pdf-proofread-previous'));
   assert.equal(pdfNavigation.top(),element('#preview').scrollTop);
   assert.equal(pdfNavigation.bottom(),element('#preview').scrollTop+element('#preview').clientHeight);
+  context.gitDraft='draft';context.gitCalls=[];
+  editor.getValue=()=>context.gitDraft;
+  element('#git-dialog').showModal=function(){this.open=true;};
+  element('#git-dialog').close=function(){this.open=false;};
+  element('#git-message').value='Test commit';
+  vm.runInContext(`busy=false;syncBusy=false;conflict=false;saved='old';version='before';editor.setOption('readOnly',false);selectionChat.busy=false;
+    request=async(url,options)=>{gitCalls.push(url);if(url==='/save')return {version:'saved'};
+      if(url==='/git')return {branch:'main',files:[{path:'main.tex',status:' M'}],excluded:['main.aux'],signature:'signature'};
+      if(url==='/git/sync'){const payload=JSON.parse(options.body);if(payload.version!=='saved'||payload.source!=='draft')throw new Error('Unsaved payload');return {id:'sync1'};}
+      if(url==='/git/job?id=sync1')return {id:'sync1',status:'done',commit:'abc123'};
+      if(url==='/state')return {source:'draft',version:'saved',path:'paper.tex',name:'paper.tex'};};`,context);
+  await element('#git-open').onclick();
+  assert.deepEqual(context.gitCalls,['/save','/git'],'Git preview must follow a successful draft save.');
+  assert.equal(element('#git-dialog').open,true);
+  assert.equal(element('#git-submit').disabled,false);
+  await element('#git-form').onsubmit({preventDefault(){}});
+  assert(context.gitCalls.includes('/git/sync'));assert(context.gitCalls.includes('/git/job?id=sync1'));assert.equal(context.gitCalls.at(-1),'/state');
+  assert.equal(element('#git-dialog').open,false);
+  assert.equal(options.readOnly,false);
+  await element('#git-open').onclick();context.gitDraft='changed after preview';
+  const beforeGitCalls=context.gitCalls.length;
+  await element('#git-form').onsubmit({preventDefault(){}});
+  assert.equal(context.gitCalls.length,beforeGitCalls,'A changed draft cannot be committed.');
+  assert.equal(element('#git-dialog').open,true,'A failure preserves the dialog and commit message.');
+  context.gitDraft='draft';
+  context.gitConflict={id:'conflict1',status:'conflicts',phase:'Review conflicts',
+    analysis_warning:'',conflicts:[{id:1,path:'main.tex',line:4,base:'Base sentence.',local:'Local sentence.',remote:'Remote sentence.',
+      analysis:{severity:'critical',category:'logic',confidence:'high',method:'codex',reason:'Competing assumptions.',recommendation:'Reconcile the assumptions.'}}],
+    files:[{path:'main.tex',merged:'Conflict draft',local:'Local sentence.',remote:'Remote sentence.',editable:true}]};
+  vm.runInContext(`request=async(url,options)=>{gitCalls.push(url);if(url==='/git/job?id=conflict1')return gitConflict;
+    if(url==='/git/resolve'){const payload=JSON.parse(options.body);if(payload.resolutions[0].choice!=='manual'||payload.resolutions[0].source!=='Resolved sentence.')throw new Error('Invalid conflict choices');return {id:'resolved1'};}
+    if(url==='/git/job?id=resolved1')return {id:'resolved1',status:'done',commit:'def456'};
+    if(url==='/state')return {source:'draft',version:'saved',path:'paper.tex',name:'paper.tex'};};`,context);
+  await vm.runInContext('followGitJob("conflict1")',context);
+  assert.equal(element('#git-submit').textContent,'应用所选合并并推送');
+  assert.equal(element('#git-discard').hidden,false);
+  const conflictPanel=element('#git-conflicts').children[0];
+  assert(conflictPanel.children[1].children[0].textContent.includes('关键'));
+  assert(conflictPanel.children[1].children[1].textContent.includes('Competing assumptions.'));
+  vm.runInContext("gitResolutionRows[0].choice.value='manual';gitResolutionRows[0].choice.onchange();gitResolutionRows[0].source.value='Resolved sentence.'",context);
+  assert.equal(vm.runInContext('gitResolutionRows[0].source.style.display',context),'block');
+  await element('#git-form').onsubmit({preventDefault(){}});
+  assert(context.gitCalls.includes('/git/resolve'));
+  assert.equal(element('#git-dialog').open,false);
+  console.log('PASS: conflict severity/reason and three-way display, manual merge editor, selected resolution and post-sync refresh');
+  console.log('PASS: Overleaf save-before-preview, sync job and polling, refreshed source, stale draft protection and failure preservation');
   console.log('PASS: source and PDF previous/next-change wiring, viewport boundaries, offscreen positions, project reviews, stale document exclusion and disabled proofreading');
   console.log('PASS: Markdown math mode, live/PDF preview switching, save-only behavior, both downloads, navigation and return to LaTeX');
   console.log('PASS: optional automatic box comments, mapped anchors, no AI submission, cancellation, replacement, stale source and persistence');

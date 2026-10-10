@@ -2,6 +2,17 @@ import {t, setText, preferences} from './latex-settings.mjs';
 
 const key='latex-codex-custom-themes';
 const roles=['bg','panel','border','text','muted','math','operator','reference','command','environment','number','environment-command','quick-accent'];
+const optionalRoles=['reference-command','gutter','selection','active-line','cursor'];
+const syntaxStyle=document.createElement('style');
+syntaxStyle.textContent=`
+.CodeMirror span.cm-reference-command{color:var(--reference-command,var(--reference))}
+.cm-s-custom .CodeMirror-linenumber{color:var(--gutter,var(--muted))}
+.cm-s-custom .CodeMirror-gutters{background:var(--bg);border-right:1px solid var(--border)}
+.cm-s-custom .CodeMirror-selected{background:var(--selection,color-mix(in srgb,var(--command) 18%,var(--bg)))}
+.cm-s-custom .CodeMirror-activeline-background{background:var(--active-line,var(--panel))}
+.cm-s-custom .CodeMirror-cursor{border-left-color:var(--cursor,var(--text))}
+`;
+document.head.append(syntaxStyle);
 const roleLabels={bg:'背景',panel:'面板',border:'边框',text:'正文',muted:'注释',command:'命令',math:'公式',operator:'运算符',reference:'引用',environment:'环境',number:'数字','environment-command':'环境命令'};
 const rgb=hex=>hex.match(/[a-f\d]{2}/gi).map(v=>parseInt(v,16));
 const hex=channels=>'#'+channels.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
@@ -79,11 +90,12 @@ function validTheme(theme) {
 }
 export function applyCustomTheme(value) {
   const theme=customThemes.find(item=>item.id===value)?.colors;
-  for(const role of roles)document.documentElement.style.removeProperty('--'+role);
+  for(const role of [...roles,...optionalRoles])document.documentElement.style.removeProperty('--'+role);
   document.documentElement.style.removeProperty('color-scheme');
   document.documentElement.style.removeProperty('--quick-foreground');
   if(!theme)return false;
   for(const role of roles)document.documentElement.style.setProperty('--'+role,theme[role]);
+  for(const role of optionalRoles)if(/^#[\da-f]{6}$/i.test(theme[role]||''))document.documentElement.style.setProperty('--'+role,theme[role]);
   document.documentElement.style.setProperty('color-scheme',theme.scheme);
   document.documentElement.style.setProperty('--quick-foreground',themeButtonText(theme));
   return true;

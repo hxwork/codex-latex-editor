@@ -128,3 +128,11 @@ LaTeX 批注建议同时生成临时 PDF 校对预览：原选区全文标红，
 第三方资源许可证必须保留，来源和版本见 `plugins/latex-codex/scripts/vendor/README.md`。PDF.js 主程序、worker、viewer 和配套资源需一起更新。当前 API / worker 含两处本地扩展：暴露原始 MediaBox，并支持按 glyph 读取精确文字位置；更新上游时保留这些扩展和 `test_history_pdf.py` / `test_editor.py` 的裁切、跨页检查。Node 仅用于维护测试的 PDF.js runner，插件运行时无需 Node。
 
 Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于同目录的 `test_*.cjs` 和 `test_*.mjs`。按变更选择现有检查；文档修改只需核对内容、路径和 `git diff --check`。
+
+## Overleaf 同步与冲突分析
+
+顶部“同步到 Overleaf”沿用保存流程保存草稿，通过当前分支 upstream 的唯一 git.overleaf.com 远程执行 fetch、本地 commit、隔离三方合并、普通 push 和远程验证。只处理项目内选定的草稿，排除编译产物、历史库及本地配置；已有本地提交也可同步。禁止 force push，远程竞争更新拒绝推送并保留本地提交。不改变认证或全局 Git 设置。
+
+三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Codex CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。
+
+实现为 scripts/overleaf_sync.py 与 editor.py。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。

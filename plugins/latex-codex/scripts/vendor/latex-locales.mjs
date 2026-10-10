@@ -1,5 +1,16 @@
 // Interface messages keyed by their English fallback. Keep placeholders unchanged.
 export const translations = {
+  "Sync to Overleaf": {"zh-TW": "同步至 Overleaf", "ja": "Overleaf に同期", "fr": "Synchroniser avec Overleaf", "de": "Mit Overleaf synchronisieren", "es": "Sincronizar con Overleaf"},
+  "Fetch, merge and push; analyze conflicts before proceeding.": {"zh-TW": "自動取得遠端更新、合併並推送；遇到衝突會先分析。", "ja": "取得、マージ、プッシュ。競合がある場合は先に分析します。", "fr": "Récupérer, fusionner et envoyer ; analyser les conflits avant de continuer.", "de": "Abrufen, zusammenführen und pushen; Konflikte vorher analysieren.", "es": "Obtener, combinar y enviar; analizar los conflictos antes de continuar."},
+  "Overleaf \u00b7 {commit} \u00b7 Synced": {"zh-TW": "Overleaf · {commit} · 已同步", "ja": "Overleaf · {commit} · 同期済み", "fr": "Overleaf · {commit} · Synchronisé", "de": "Overleaf · {commit} · Synchronisiert", "es": "Overleaf · {commit} · Sincronizado"},
+  "Git commit": {"zh-TW": "Git 提交", "ja": "Git コミット", "fr": "Commit Git", "de": "Git-Commit", "es": "Commit de Git"},
+  "Commit message": {"zh-TW": "提交說明", "ja": "コミットメッセージ", "fr": "Message du commit", "de": "Commit-Nachricht", "es": "Mensaje del commit"},
+  "Commit": {"zh-TW": "提交", "ja": "コミット", "fr": "Valider", "de": "Committen", "es": "Confirmar"},
+  "Save to local Git history; no remote push.": {"zh-TW": "儲存到本機 Git 歷史；不會推送至遠端。", "ja": "ローカル Git 履歴に保存します。リモートへのプッシュは行いません。", "fr": "Enregistrer dans Git local, sans envoi distant.", "de": "Im lokalen Git-Verlauf speichern, ohne Push.", "es": "Guardar en Git local, sin enviar al remoto."},
+  "{branch} \u00b7 {count} files to commit": {"zh-TW": "{branch} · {count} 個待提交檔案", "ja": "{branch} · {count} ファイルをコミット", "fr": "{branch} · {count} fichiers à valider", "de": "{branch} · {count} Dateien zum Commit", "es": "{branch} · {count} archivos para confirmar"},
+  "No changes to commit": {"zh-TW": "沒有需要提交的修改", "ja": "コミットする変更はありません", "fr": "Aucune modification à valider", "de": "Keine Änderungen zum Commit", "es": "No hay cambios para confirmar"},
+  "Excluded build products and local caches: {count} files": {"zh-TW": "已排除編譯產物與本機快取：{count} 個檔案", "ja": "ビルド生成物とキャッシュを除外：{count} ファイル", "fr": "Produits de compilation et caches exclus : {count} fichiers", "de": "Build-Dateien und Caches ausgeschlossen: {count} Dateien", "es": "Archivos de compilación y caché excluidos: {count} archivos"},
+  "Draft changed. Close and reopen Git commit.": {"zh-TW": "草稿已變更，請關閉並重新開啟 Git 提交。", "ja": "下書きが変更されました。Git コミットを開き直してください。", "fr": "Le brouillon a changé. Rouvrez le commit Git.", "de": "Entwurf geändert. Git-Commit erneut öffnen.", "es": "El borrador cambió. Vuelve a abrir el commit de Git."},
   "Send to DeepSeek main chat": {"zh-TW":"傳送到 DeepSeek 主對話","ja":"DeepSeek のメインチャットに送信","fr":"Envoyer au chat principal DeepSeek","de":"An den DeepSeek-Hauptchat senden","es":"Enviar al chat principal de DeepSeek"},
   "Sending to main chat…": {"zh-TW":"正在轉交主對話…","ja":"メインチャットに送信中…","fr":"Envoi au chat principal…","de":"Wird an den Hauptchat gesendet…","es":"Enviando al chat principal…"},
   "Comments sent to DeepSeek main chat.": {"zh-TW":"批註已轉交 DeepSeek 主對話。","ja":"注釈を DeepSeek のメインチャットに送信しました。","fr":"Commentaires envoyés au chat principal DeepSeek.","de":"Kommentare wurden an den DeepSeek-Hauptchat gesendet.","es":"Comentarios enviados al chat principal de DeepSeek."},
