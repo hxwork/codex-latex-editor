@@ -87,3 +87,7 @@ Additional palette sources (same CodeMirror 5 release):
 - https://codemirror.net/5/theme/material-palenight.css
 - https://codemirror.net/5/theme/ayu-dark.css
 - https://codemirror.net/5/theme/gruvbox-dark.css
+
+Automatic delimiter pairing: closebrackets.js from CodeMirror 5.65.20 (MIT),
+https://raw.githubusercontent.com/codemirror/codemirror5/5.65.20/addon/edit/closebrackets.js
+Local adaptations preserve escaped LaTeX delimiters, pair dollars beside prose, and respect readonly states. Existing CodeMirror license is retained.

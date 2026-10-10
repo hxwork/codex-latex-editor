@@ -40,7 +40,7 @@ HISTORY_PDF_CACHE_DAYS = 30
 
 VENDOR = Path(__file__).with_name('vendor')
 ASSETS = {name: 'text/css' if name.endswith('.css') else 'text/javascript'
-          for name in ('codemirror.js', 'codemirror.css', 'cobalt.css', 'dracula.css', 'monokai.css', 'nord.css', 'stex.js', 'vim.js', 'emacs.js', 'search.js', 'searchcursor.js', 'matchbrackets.js', 'comment.js', 'dialog.js', 'dialog.css', 'show-hint.js', 'show-hint.css', 'latex-hint.js', 'latex-hover.mjs', 'latex-chat.mjs', 'latex-history.mjs', 'latex-settings.mjs', 'latex-locales.mjs', 'latex-themes.mjs', 'latex-history.css')}
+          for name in ('codemirror.js', 'codemirror.css', 'cobalt.css', 'dracula.css', 'monokai.css', 'nord.css', 'stex.js', 'vim.js', 'emacs.js', 'search.js', 'searchcursor.js', 'matchbrackets.js', 'closebrackets.js', 'comment.js', 'dialog.js', 'dialog.css', 'show-hint.js', 'show-hint.css', 'latex-hint.js', 'latex-hover.mjs', 'latex-chat.mjs', 'latex-history.mjs', 'latex-settings.mjs', 'latex-locales.mjs', 'latex-themes.mjs', 'latex-history.css')}
 ASSETS.update({'history-tabs.mjs':'text/javascript','history-tabs.css':'text/css','latex-native-annotations.mjs':'text/javascript','latex-pdf-analysis.mjs':'text/javascript','latex-pdf-selection.mjs':'text/javascript'})
 ASSETS.update({'latex-proofread.mjs':'text/javascript','latex-proofread.css':'text/css','latex-project-review.mjs':'text/javascript'})
 ASSETS.update({'latex-proofread-pdf.mjs':'text/javascript','latex-writing-styles.mjs':'text/javascript'})
@@ -205,7 +205,7 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 <div id="history-actions" popover="auto" role="menu" aria-label="历史记录操作" data-i18n-aria-label="历史记录操作"><button id="history-rename" role="menuitem" data-i18n="重命名">重命名</button><button id="history-restore" role="menuitem" disabled data-i18n="恢复此版本">恢复此版本</button></div>
 <dialog id="history-name-dialog" class="history-small-dialog" aria-labelledby="history-name-title"><h3 id="history-name-title" data-i18n="重命名版本">重命名版本</h3><form id="history-label-form"><label for="history-label" data-i18n="版本名称">版本名称</label><input id="history-label" maxlength="120" placeholder="例如：投稿前定稿" data-i18n-placeholder="例如：投稿前定稿"><p id="history-label-error" role="alert"></p><div class="history-dialog-actions"><button id="history-label-cancel" type="button" data-i18n="取消">取消</button><button id="history-label-save" type="submit" data-i18n="保存名称">保存名称</button></div></form></dialog>
 <dialog id="history-confirmation" class="history-small-dialog" aria-labelledby="history-confirm-title"><h3 id="history-confirm-title" data-i18n="确定恢复？">确定恢复？</h3><div class="history-dialog-actions"><button id="history-cancel" data-i18n="取消">取消</button><button id="history-confirm" data-i18n="确认恢复">确认恢复</button></div></dialog></dialog>
-<script src="/vendor/codemirror.js"></script><script src="/vendor/stex.js"></script><script src="/vendor/dialog.js"></script><script src="/vendor/searchcursor.js"></script><script src="/vendor/search.js"></script><script src="/vendor/matchbrackets.js"></script><script src="/vendor/vim.js"></script><script src="/vendor/emacs.js"></script>
+<script src="/vendor/codemirror.js"></script><script src="/vendor/stex.js"></script><script src="/vendor/dialog.js"></script><script src="/vendor/searchcursor.js"></script><script src="/vendor/search.js"></script><script src="/vendor/matchbrackets.js"></script><script src="/vendor/closebrackets.js"></script><script src="/vendor/vim.js"></script><script src="/vendor/emacs.js"></script>
 <script src="/vendor/show-hint.js"></script><script src="/vendor/latex-hint.js"></script>
 <script src="/vendor/comment.js"></script>
 <script src="/vendor/xml.js"></script><script src="/vendor/markdown.js"></script><script src="/vendor/overlay.js"></script><script src="/vendor/gfm.js"></script><script src="/vendor/multiplex.js"></script><script src="/vendor/latex-markdown.js"></script>
@@ -261,7 +261,7 @@ document.querySelector('#pan-mode').onclick=()=>{
   const hint=document.querySelector('#pan-hint');clearTimeout(panHintTimer);hint.hidden=panMode;
   if(!panMode)panHintTimer=setTimeout(()=>{hint.hidden=true;},2500);
 };
-const editor=CodeMirror.fromTextArea(source,{mode:'text/x-stex',theme:'cobalt',keyMap:'default',lineNumbers:true,lineWrapping:true,tabSize:2,indentUnit:2,readOnly:'nocursor',screenReaderLabel:t('LaTeX 源码')});
+const editor=CodeMirror.fromTextArea(source,{mode:'text/x-stex',theme:'cobalt',keyMap:'default',lineNumbers:true,lineWrapping:true,tabSize:2,indentUnit:2,autoCloseBrackets:{pairs:'()[]{}$$',override:true,explode:''},readOnly:'nocursor',screenReaderLabel:t('LaTeX 源码')});
 let documentType='latex',markdownPdf=false;
 const markdownLive=()=>documentType==='markdown'&&!markdownPdf;
 const markdownPane=document.querySelector('#markdown-preview'),markdownPreview=attachMarkdownPreview(markdownPane,editor);

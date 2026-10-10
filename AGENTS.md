@@ -138,3 +138,5 @@ Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于
 实现为 scripts/overleaf_sync.py 与 editor.py。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。
 
 Overleaf 上传默认排除 Markdown、脚本、未引用资源和杂项文件。TeX / 文献 / 样式作为论文源码；其他资源须由 TeX 显式引用。不将本地笔记随文稿上传。
+
+源码默认自动配对 ()、[]、{}、$。光标留在配对内，已存在闭合符号时跳过，选中文本时包裹选区，空配对 Backspace 同时删除。转义符号不配对；只读和 Vim Normal 模式不拦截输入。使用 vendor/closebrackets.js，验证 test_autopairs.cjs。
