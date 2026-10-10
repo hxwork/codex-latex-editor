@@ -39,3 +39,9 @@ node test_settings.mjs
 ```
 
 Overleaf integration tests use disposable local Git remotes and do not upload real papers. Semantic analysis was additionally checked with synthetic text through the actual Codex CLI.
+
+## Project file tree
+
+The toolbar tree button toggles a resizable project sidebar. Click text files to edit; right-click for creation, rename/move, or deletion; drag project files/folders onto a folder or the project-root row. Images and PDFs have a read-only preview. Rename/move does not rewrite TeX references. Deletion moves items into the project-local recovery area; the restore button recovers the most recent item, including after refresh. The main compilation file cannot be deleted until a different main file is selected.
+
+Checks: test_project_tree.py, test_file_tree.mjs and test_ui.cjs. Runtime module project_tree.py must be included in installation packages.

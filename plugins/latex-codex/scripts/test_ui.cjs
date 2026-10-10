@@ -73,6 +73,7 @@ const context = vm.createContext({
   attachProjectReview(){return {items:[],busy:false,refresh:async()=>{},clear(){}};},
   attachProofreadPdf(){return {update(){},invalidate(){},active:false};},paintProofreadActions(){},
   attachProofreadNavigation(config){config.button.navigation=config;return {update(){}};},proofreadPdfPositions(){return [];},
+  mountProjectTree(){return {refresh(){}};},
   mountSourceWheel({button}){return {update(data){button.textContent=data.files.find(file=>file.path===data.path)?.name;button.files=data.files;button.mainFile=data.mainFile;},setDisabled(value){button.disabled=value;}};},
   pdfPageBoxes:async()=>[[0,0,600,800],[0,0,600,800]],
   attachPdfBoxSelection(config){context.boxConfig=config;return {selection:null,clear(){this.selection=null;config.onSelect(null);},start(){return false;},move(){return false;},end(){return false;},bounds(){return {left:20,top:30,bottom:70};}};},

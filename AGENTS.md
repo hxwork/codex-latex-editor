@@ -140,3 +140,5 @@ Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于
 Overleaf 上传默认排除 Markdown、脚本、未引用资源和杂项文件。TeX / 文献 / 样式作为论文源码；其他资源须由 TeX 显式引用。不将本地笔记随文稿上传。
 
 源码默认自动配对 ()、[]、{}、$。光标留在配对内，已存在闭合符号时跳过，选中文本时包裹选区，空配对 Backspace 同时删除。转义符号不配对；只读和 Vim Normal 模式不拦截输入。使用 vendor/closebrackets.js，验证 test_autopairs.cjs。
+
+项目文件树：project_tree.py 与 vendor/latex-file-tree.{mjs,css}。支持创建、移动、重命名、可恢复删除；路径和文件树版本检查，禁止符号链接和隐藏目录。删除保存到项目 .latex-codex/file-trash；文件引用不自动重写。新运行模块需随原生安装分发，DeepSeek 打包需同步模块清单。
