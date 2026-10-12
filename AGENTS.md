@@ -142,3 +142,5 @@ Overleaf 上传默认排除 Markdown、脚本、未引用资源和杂项文件�
 源码默认自动配对 ()、[]、{}、$。光标留在配对内，已存在闭合符号时跳过，选中文本时包裹选区，空配对 Backspace 同时删除。转义符号不配对；只读和 Vim Normal 模式不拦截输入。使用 vendor/closebrackets.js，验证 test_autopairs.cjs。
 
 项目文件树：project_tree.py 与 vendor/latex-file-tree.{mjs,css}。支持创建、移动、重命名、可恢复删除；路径和文件树版本检查，禁止符号链接和隐藏目录。删除保存到项目 .latex-codex/file-trash；文件引用不自动重写。新运行模块需随原生安装分发，DeepSeek 打包需同步模块清单。
+
+本地开发热重载：hot_reload.py 与 vendor/latex-runtime.mjs 必须随原生包分发。维护自己的 fork 时从仓库源码 scripts/editor.py 启动服务，后续运行代码和 vendor 更新会自动同址重启并刷新；缓存运行方式监测缓存目录，须先更新安装。技能、manifest 或 MCP 配置的加载仍遵循 Codex 安装流程。后台任务、草稿或待处理批注存在时延后更新。不要通过替换 app.asar 或配置绕过安装机制。

@@ -31,6 +31,7 @@ from preferences import Preferences
 from project_review import ProjectReview, review_hunks
 from proofread import color_preamble, document_start, proofread_source
 from markdown_source import SOURCE_EXTENSIONS, document_type, markdown_resource
+from hot_reload import runtime_revision, validate_runtime, reload_blocked
 from project_tree import TEXT_EXTENSIONS, tree_snapshot, safe_path as tree_path, mutate as tree_mutate
 from obsidian_tex import convert as note_to_tex, find_vault_root
 from overleaf_sync import OverleafSync, destination
@@ -41,7 +42,7 @@ HISTORY_PDF_CACHE_DAYS = 30
 
 VENDOR = Path(__file__).with_name('vendor')
 ASSETS = {name: 'text/css' if name.endswith('.css') else 'text/javascript'
-          for name in ('codemirror.js', 'codemirror.css', 'cobalt.css', 'dracula.css', 'monokai.css', 'nord.css', 'stex.js', 'vim.js', 'emacs.js', 'search.js', 'searchcursor.js', 'matchbrackets.js', 'closebrackets.js', 'latex-file-tree.mjs', 'latex-file-tree.css', 'comment.js', 'dialog.js', 'dialog.css', 'show-hint.js', 'show-hint.css', 'latex-hint.js', 'latex-hover.mjs', 'latex-chat.mjs', 'latex-history.mjs', 'latex-settings.mjs', 'latex-locales.mjs', 'latex-themes.mjs', 'latex-history.css')}
+          for name in ('codemirror.js', 'codemirror.css', 'cobalt.css', 'dracula.css', 'monokai.css', 'nord.css', 'stex.js', 'vim.js', 'emacs.js', 'search.js', 'searchcursor.js', 'matchbrackets.js', 'closebrackets.js', 'latex-file-tree.mjs', 'latex-runtime.mjs', 'latex-file-tree.css', 'comment.js', 'dialog.js', 'dialog.css', 'show-hint.js', 'show-hint.css', 'latex-hint.js', 'latex-hover.mjs', 'latex-chat.mjs', 'latex-history.mjs', 'latex-settings.mjs', 'latex-locales.mjs', 'latex-themes.mjs', 'latex-history.css')}
 ASSETS.update({'history-tabs.mjs':'text/javascript','history-tabs.css':'text/css','latex-native-annotations.mjs':'text/javascript','latex-pdf-analysis.mjs':'text/javascript','latex-pdf-selection.mjs':'text/javascript'})
 ASSETS.update({'latex-proofread.mjs':'text/javascript','latex-proofread.css':'text/css','latex-project-review.mjs':'text/javascript'})
 ASSETS.update({'latex-proofread-pdf.mjs':'text/javascript','latex-writing-styles.mjs':'text/javascript'})
@@ -212,6 +213,7 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 <script src="/vendor/xml.js"></script><script src="/vendor/markdown.js"></script><script src="/vendor/overlay.js"></script><script src="/vendor/gfm.js"></script><script src="/vendor/multiplex.js"></script><script src="/vendor/latex-markdown.js"></script>
 <script type="module">
 import {mountProjectTree} from "/vendor/latex-file-tree.mjs";
+import {mountRuntimeReload} from "/vendor/latex-runtime.mjs";
 import * as pdfjsLib from '/vendor/pdfjs/build/pdf.mjs';
 import {pdfPageBoxes} from '/vendor/latex-pdf-analysis.mjs';
 import {attachPdfBoxSelection} from '/vendor/latex-pdf-selection.mjs';
@@ -489,7 +491,7 @@ const projectTree=mountProjectTree({request,
     if(conflict||editor.getValue()!==saved)throw new Error('请先保存当前草稿。');
     return true;
   },
-  lock:value=>{busy=value;editor.setOption('readOnly',value?'nocursor':false);updateSyncControls();},
+  lock:value=>{clearTimeout(timer);busy=value;editor.setOption('readOnly',value?'nocursor':false);updateSyncControls();},
   open:switchSource,
   changed:async data=>{display(data.state);await clearPreview();if(autoCompile.checked)await compile();},
   resize:()=>{editor.refresh();}
@@ -1593,7 +1595,21 @@ document.querySelector('#compile').onclick=compile;
 openButton.onclick=openFile;
 document.querySelector('#reload').onclick=()=>load(true);
 window.addEventListener('beforeunload',e=>{if(editor.getValue()!==saved||busy){e.preventDefault();e.returnValue='';}});
-setInterval(()=>{if(!conflict)load();},2000);load();
+setInterval(()=>{if(!conflict)load();},2000);
+let runtimeLoading=true;
+load().finally(()=>{runtimeLoading=false;});
+mountRuntimeReload({request,ready:()=>!!version&&!runtimeLoading,
+  blocked:()=>busy||syncBusy||loading||conflict||editor.getValue()!==saved||projectReview.busy||historyDialog.open||selectionChat.busy||selectionChat.hasAnnotations||proofreadPdf?.active||gitJob?.status==='running'||gitJob?.status==='conflicts'||!!document.querySelector('dialog[open]')||editor.getOption('readOnly'),
+  save:()=>compile(false),
+  lock:value=>{clearTimeout(timer);busy=value;editor.setOption('readOnly',value?'nocursor':false);updateSyncControls();},
+  capture:()=>({path:document.querySelector('#filename').title,version,cursor:editor.getCursor(),scroll:editor.getScrollInfo(),pdfTop:preview.scrollTop,pdfLeft:preview.scrollLeft,zoom:pdfZoom}),
+  restore:async value=>{
+    if(value.path!==document.querySelector('#filename').title||value.version!==version)return true;
+    editor.setCursor(value.cursor);editor.scrollTo(value.scroll.left,value.scroll.top);
+    if(Number.isFinite(value.zoom))setPdfZoom(value.zoom);
+    preview.scrollTop=value.pdfTop;preview.scrollLeft=value.pdfLeft;return true;
+  }
+});
 </script></html>'''
 
 
@@ -2735,7 +2751,9 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                 return
             parsed = urlsplit(self.path)
             route = parsed.path
-            if route == '/':
+            if route == '/runtime':
+                self.reply(200, {'started': self.server.runtime_started, 'current': runtime_revision(Path(__file__).parent)})
+            elif route == '/':
                 try:
                     saved = json.dumps(self.server.preferences.read(), ensure_ascii=False).replace('<', '\\u003c')
                     page = PAGE.replace('<!--USER_PREFERENCES-->', '<script id="user-preferences" type="application/json">' + saved + '</script>')
@@ -2901,12 +2919,18 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     self.reply(400, {'error': str(error)})
                 except OSError as error:
                     self.reply(500, {'error': str(error)})
+                finally:
+                    with state_lock:
+                        self.server.runtime_history_builds -= 1
 
         def post(self):
             nonlocal path, history, root, main_file
             if not self.local():
                 return
-            if self.path not in ('/tree', '/git/discard', '/git/sync', '/git/resolve', '/git/commit', '/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
+            if self.server.runtime_resume:
+                self.reply(409, {'error': '编辑器正在更新，请稍后重试。'})
+                return
+            if self.path not in ('/runtime/reload', '/tree', '/git/discard', '/git/sync', '/git/resolve', '/git/commit', '/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
                 self.reply(404, {'error': 'Not found.'})
                 return
             try:
@@ -2918,6 +2942,21 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                 data = json.loads(payload)
                 if not isinstance(data, dict):
                     raise ValueError('Expected a JSON object.')
+                if self.path == '/runtime/reload':
+                    if not self.server.runtime_enabled:
+                        raise ValueError('当前启动方式不支持自动重载。')
+                    current = snapshot(path)
+                    if data.get('path') != str(path) or data.get('version') != current['version']:
+                        raise FileConflict('源码已变化，请先保存，再更新编辑器。')
+                    if reload_blocked(self.server) or self.server.runtime_resume:
+                        raise FileConflict('请等待后台任务结束后更新编辑器。')
+                    validate_runtime(Path(__file__).parent)
+                    if data.get('revision') != runtime_revision(Path(__file__).parent):
+                        raise FileConflict('插件仍在更新，请稍后重试。')
+                    self.server.runtime_resume = (str(main_file), str(root), str(path))
+                    self.reply(200, {'ok': True})
+                    threading.Thread(target=self.server.shutdown, daemon=True).start()
+                    return
                 if self.path == '/tree':
                     current = snapshot(path)
                     if data.get('active_path') != str(path) or data.get('version') != current['version']:
@@ -3112,6 +3151,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                             if previous: previous[1].set()
                             cancellation = threading.Event()
                             self.server.history_pdf_request = request_id, cancellation
+                            self.server.runtime_history_builds += 1
                             return revision_path, old, target, data.get('recompile') is True, data.get('analysis'), cancellation
                         if self.path == '/history/pdf-cache':
                             self.reply(200, {'cache_error': save_history_pdf_images(history_pdf_cache_file(revision_path, old, target, root, history_pdf_context(self.server, revision_path)), data.get('images'))})
@@ -3348,6 +3388,11 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
 
     # Browser preconnects must not monopolize accept(); serialize document operations, not idle sockets.
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    server.runtime_started = runtime_revision(Path(__file__).parent)
+    server.runtime_history_builds = 0
+    server.runtime_enabled = False
+    server.runtime_resume = None
+    server.resume_source = switch_source
     server.preferences = Preferences(preferences_path)
     server.review = ProjectReview(root)
     if server.preferences.read().get('latex-codex-proofread-project') == 'on':
@@ -3377,11 +3422,15 @@ def main(ai_backend='codex'):
     parser.add_argument('--project-root', type=Path, help='Project folder containing the main file and included sources')
     parser.add_argument('--ai-backend', choices=(ai_backend,), default=ai_backend,
                         help='This plugin uses ' + ai_backend + '; install the other plugin to change AI providers')
+    parser.add_argument('--resume-source', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         server = make_server(args.file, args.port, project_root=args.project_root, ai_backend=args.ai_backend)
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired, sqlite3.Error) as error:
         parser.exit(1, str(error) + '\n')
+    server.runtime_enabled = True
+    if args.resume_source:
+        server.resume_source(project_source(server.project_root, str(args.resume_source)))
     print(f'http://127.0.0.1:{server.server_port}/', flush=True)
     try:
         server.serve_forever()
@@ -3396,6 +3445,12 @@ def main(ai_backend='codex'):
         server.build.cleanup()
         for cached in server.history_pdfs.values():
             cached['directory'].cleanup()
+
+    if server.runtime_resume:
+        entry, root, active = server.runtime_resume
+        os.execv(sys.executable, [sys.executable, '-B', str(Path(__file__).resolve()), entry,
+                 '--port', str(server.server_port), '--project-root', root,
+                 '--resume-source', active, '--ai-backend', ai_backend])
 
 
 if __name__ == '__main__':

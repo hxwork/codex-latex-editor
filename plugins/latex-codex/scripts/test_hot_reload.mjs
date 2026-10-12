@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {mountRuntimeReload} from './vendor/latex-runtime.mjs';
+const originalTimeout=globalThis.setTimeout,originalDate=Date.now;
+let now=0,reloaded=0,locks=[],saves=0,blocked=true,calls=[],restarted=false;
+Date.now=()=>now;globalThis.setInterval=()=>{};globalThis.setTimeout=fn=>{fn();};
+const values=new Map();globalThis.sessionStorage={setItem:(k,v)=>values.set(k,v),getItem:k=>values.get(k),removeItem:k=>values.delete(k)};
+globalThis.location={origin:'http://127.0.0.1:12345',reload(){reloaded++;}};
+globalThis.window={addEventListener(){}};
+let button;globalThis.document={createElement(){return button={};},querySelector(){return {append(){}};}};
+const position={path:'/paper/abstract.tex',version:'v',cursor:{line:3,ch:7},scroll:{left:2,top:90},pdfTop:110,pdfLeft:4,zoom:125};
+const config={ready:()=>true,blocked:()=>blocked,save:async()=>{saves++;},lock:v=>locks.push(v),capture:()=>position,restore:async()=>true,request:async(route,data)=>{calls.push(route);if(route==='/runtime/reload'){assert.deepEqual(JSON.parse(data.body),{revision:'new',path:position.path,version:'v'});restarted=true;return {ok:true};}return {started:restarted?'new':'old',current:'new'};}};
+const runtime=mountRuntimeReload(config);await Promise.resolve();await Promise.resolve();now=5000;
+await runtime.check();await runtime.check();assert.equal(reloaded,0,'Busy drafts block reload');assert.equal(saves,0);
+blocked=false;await runtime.check();assert.equal(reloaded,1);assert.equal(saves,1);assert.deepEqual(locks,[true,false]);assert(values.size===1);
+let restored;mountRuntimeReload({...config,restore:async value=>{restored=value;return true;}});await Promise.resolve();await Promise.resolve();assert.deepEqual(restored,position);assert.equal(values.size,0);
+Date.now=originalDate;globalThis.setTimeout=originalTimeout;
+console.log('PASS: deferred update, saved draft handshake, same-address refresh and checkpoint restoration');

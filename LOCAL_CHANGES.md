@@ -47,3 +47,5 @@ The toolbar tree button toggles a resizable project sidebar. Click text files to
 Checks: test_project_tree.py, test_file_tree.mjs and test_ui.cjs. Runtime module project_tree.py must be included in installation packages.
 
 编译错误保持当前源码文件和光标，仅在当前文件标记错误并显示日志；不自动跳到父文件的 input 行。关闭自动编译后，切换源码不触发编译。
+
+自动更新：运行服务监测自身 scripts 与 vendor 的文件版本；代码稳定且草稿可保存、无冲突、批注或后台任务时，同址重启并刷新页面，恢复文件与编辑位置。更新失败保留已保存内容及恢复检查点。仅加载本地代码，不拉取 GitHub 或修改 Codex 配置。
