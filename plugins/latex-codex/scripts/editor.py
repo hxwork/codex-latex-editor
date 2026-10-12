@@ -511,12 +511,13 @@ autoCompile.onchange=()=>{
 let errorLine=null;
 function showCompileError(error){
   if(errorLine){editor.removeLineClass(errorLine,'background','compile-error-line');editor.removeLineClass(errorLine,'gutter','compile-error-gutter');errorLine=null;}
-  if(!error||!Number.isInteger(error.line)||error.line<1||error.line>editor.lineCount())return;
+  if(!error||!Number.isInteger(error.line)||error.line<1)return;
   if(error.path&&error.path!==document.querySelector('#filename').title){setText(status,'编译失败 · {name} 第 {line} 行：{message}',{...error,name:error.path.split(/[\\/]/).pop()});return;}
+  if(error.line>editor.lineCount())return;
   const cursor={line:error.line-1,ch:0};
   errorLine=editor.addLineClass(cursor.line,'background','compile-error-line');
   editor.addLineClass(errorLine,'gutter','compile-error-gutter');
-  editor.setCursor(cursor);editor.focus();editor.scrollIntoView(cursor,editor.getScrollInfo().clientHeight/2);
+  // Diagnostics highlight the active source without interrupting editing or navigation.
   setText(status,'编译失败 · 第 {line} 行：{message}',error);
 }
 function updateSyncControls(){const disabled=busy||syncBusy||editor.getOption('readOnly');forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;}
@@ -600,7 +601,7 @@ async function switchSource(path,initialize=true){
   clearTimeout(timer);busy=true;editor.setOption('readOnly','nocursor');updateSyncControls();
   try{const data=await request('/source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,version})});display(data,true);return true;}
   catch(e){setText(status,'打开失败：{message}',{message:e.message});return false;}
-  finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();if(initialize&&!pdfVersion&&!conflict)await compile();}
+  finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();if(initialize&&autoCompile.checked&&!pdfVersion&&!conflict)await compile();}
 }
 document.querySelector('#project-open').onclick=()=>{document.querySelector('#file-menu').hidePopover();document.querySelector('#project-root').value=projectRoot;document.querySelector('#project-entry').value=mainFile;document.querySelector('#project-error').textContent='';projectDialog.showModal();};
 document.querySelector('#project-cancel').onclick=()=>projectDialog.close();
@@ -742,10 +743,9 @@ async function compile(compilePdf=true){
     pdfVersion='';compiledLabels={};compiledCitations={};log.textContent=data.log;
     if(!data.ok)showCompileLog(true);
     setText(status,data.ok?'已保存 · 编译成功':'已保存 · 编译失败，请查看日志');
-    if(!data.ok&&data.diagnostic?.path&&data.diagnostic.path!==document.querySelector('#filename').title&&editor.getValue()===text&&!selectionChat.busy&&!selectionChat.hasAnnotations){
-      const target=await request('/source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:data.diagnostic.path,version})});display(target);showCompileLog(true);
-    }
-    showCompileError(!data.ok&&(editor.getValue()===text||data.diagnostic?.path===document.querySelector('#filename').title)?data.diagnostic:null);
+    // TeX may report a child-source error at its parent's input line. Never switch
+    // the editor to that diagnostic: keep the file and draft the user is fixing.
+    showCompileError(!data.ok&&editor.getValue()===text?data.diagnostic:null);
     if(data.ok){
       normalPdfData=data;proofreadPdf.invalidate();
       try{await refreshPreview(data);pdfVersion=data.sync?data.version:'';compiledLabels=data.labels||{};compiledCitations=data.citations||{};}
