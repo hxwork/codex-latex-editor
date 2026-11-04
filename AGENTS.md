@@ -12,6 +12,16 @@
 
 ## 安装
 
+### GitHub Copilot 技能（本 fork）
+
+AI 请求使用已登录（`copilot login`）的 GitHub Copilot CLI。在仓库根目录执行：
+
+```sh
+python3 scripts/install_copilot_skill.py
+```
+
+它把 `plugins/latex-codex/scripts/` 运行时（不含测试、缓存和 frontend 源码）与改名为 `latex-copilot` 的 `SKILL.md` 复制到 `~/.copilot/skills/latex-copilot/`，先完整生成再替换旧安装；`copilot skill list` 可见后，任何 Copilot 会话都可按技能启动编辑器，并在应用的 Browser 侧面板打开回环地址。安装副本独立于仓库检出；更新仓库后重新执行即可。`--target` 可指定其他目录。卸载即删除该目录。已在运行的服务需停止后从新安装路径重新启动。
+
 ### 原生 Codex（默认）
 
 `latex-codex@latex-codex-shared` 是原生插件。普通安装和更新保持此 ID，不安装 DeepSeek。
