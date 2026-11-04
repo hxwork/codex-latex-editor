@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "latex-copilot",
-  "version": "0.3.12-copilot.1",
+  "version": "0.3.12-copilot.2",
   "description": "Local Overleaf-style LaTeX and Markdown editor in the GitHub Copilot app's Browser panel: local TeX compilation, PDF.js preview with SyncTeX, and Copilot CLI review edits with Keep/Undo.",
   "author": {
     "name": "hxwork"
