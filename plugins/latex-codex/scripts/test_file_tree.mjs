@@ -18,14 +18,14 @@ fail=true;locks=[];await folder.ondrop(drop(payload));assert.equal(calls.length,
 const menu=body.children.find(e=>e.className==='file-tree-menu');folder.oncontextmenu({preventDefault(){},stopPropagation(){},clientX:10,clientY:20});assert.equal(menu.children.length,4);
 // Header creation uses the selected directory and file's parent respectively.
 const dialog=body.children.find(e=>e.className==='file-tree-dialog'),form=dialog.children[2],input=form.children[0];
-elements.get('#tree-new-file').onclick();assert.equal(input.value,'assets/');assert.equal(input.attributes['aria-label'],'新文件路径');
-elements.get('#tree-new-folder').onclick();assert.equal(input.value,'assets/');assert.equal(input.attributes['aria-label'],'新文件夹路径');
+elements.get('#tree-new-file').onclick();assert.equal(input.value,'assets/');assert.equal(input.attributes['aria-label'],'New file path');
+elements.get('#tree-new-folder').onclick();assert.equal(input.value,'assets/');assert.equal(input.attributes['aria-label'],'New folder path');
 fail=false;calls=[];input.value='assets/new-folder';await form.onsubmit({preventDefault(){}});assert.equal(calls[0].action,'folder');assert.equal(calls[0].path,'assets/new-folder');
 elements.get('#tree-new-file').onclick();input.value='assets/new.tex';await form.onsubmit({preventDefault(){}});assert.equal(opened.at(-1),'/project/assets/new.tex','Created files open immediately');
 const header=elements.get('#tree-heading-toggle');header.onclick();assert.equal(root.hidden,true);header.onclick();assert.equal(root.hidden,false);
 const handle=elements.get('#file-tree-resizer'),panel=elements.get('#file-tree-panel');
 let resized=0;handle.onpointerdown({button:0,pointerId:7,clientX:240,preventDefault(){}});handle.onpointermove({pointerId:7,clientX:340,preventDefault(){}});assert.equal(panel.style.width,'340px');handle.onpointerup({pointerId:7});assert.equal(stored.get('latex-file-tree-width'),'340');
 handle.onkeydown({key:'ArrowRight',preventDefault(){}});assert.equal(panel.style.width,'356px');handle.onkeydown({key:'End',preventDefault(){}});assert.equal(panel.style.width,'450px','Width leaves room for the editor');handle.ondblclick();assert.equal(panel.style.width,'240px');
-assert.equal(file.children[0].className,'tree-icon');assert.equal(file.children[1].textContent,'main.tex');assert.equal(file.children[2].attributes['aria-label'],'更多操作：main.tex');
+assert.equal(file.children[0].className,'tree-icon');assert.equal(file.children[1].textContent,'main.tex');assert.equal(file.children[2].attributes['aria-label'],'More actions: main.tex');
 elements.get('#file-tree-toggle').onclick();assert(elements.get('#file-tree-panel').hidden);globalThis.setInterval=interval;
 console.log('PASS: icons, folder-based creation, tree collapse, pointer/keyboard resizing and persistence, drag/drop, menus and busy guard');

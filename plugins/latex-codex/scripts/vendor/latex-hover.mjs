@@ -1,3 +1,4 @@
+import {t} from './latex-settings.mjs';
 // Local source previews; parsing and rendering never save or compile the document.
 const mathEnvironment = /^(?:math|displaymath|equation|align|alignat|gather|multline|flalign|aligned|alignedat|gathered|split|cases|[bpvBV]?matrix|smallmatrix|array)\*?$/;
 
@@ -142,7 +143,7 @@ export function attachMathHover(cm, katex) {
           macros: {...macros, '\\label': {numArgs: 1, tokens: []}}});
       } catch (error) {
         formula.className = 'math-hover-error';
-        formula.textContent = '此公式暂无法预览，请查看右侧 PDF。';
+        formula.textContent = t('此公式暂无法预览，请查看右侧 PDF。');
         formula.title = String(error.message);
       }
       active = range;

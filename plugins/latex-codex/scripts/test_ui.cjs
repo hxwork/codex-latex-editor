@@ -69,7 +69,7 @@ function flushAnimationFrames(){animationTime+=16;const callbacks=[...animationF
 function settleAnimation(){for(let i=0;animationFrames.size&&i<120;i++)flushAnimationFrames();assert.equal(animationFrames.size,0);}
 const context = vm.createContext({
   preferences:{getItem(key){return stored.get(key);},setItem(key,value){stored.set(key,value);}},
-  t:key=>key, setText:(element,key,values={})=>{element.textContent=key.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);},initSettings(){}, initScreenshotThemes(){}, applyCustomTheme(){return false;},
+  t:(key,values={})=>key.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match), setText:(element,key,values={})=>{element.textContent=key.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);},initSettings(){}, initScreenshotThemes(){}, applyCustomTheme(){return false;},
   attachMathHover(){return {setMainSource(){}};},attachNativeAnnotations(){},attachSelectionChat(){return context.bulkChatApi={open(){chatOpened.push('full');},openQuick(anchor){chatOpened.push(anchor);},refreshAnnotations(){},busy:false};},attachHistory(){},mountHistoryTabs(){},katex:{},
   attachProjectReview(){return context.bulkProjectApi={items:[],busy:false,refresh:async()=>{},clear(){}};},
   attachProofreadPdf(){return {update(){},invalidate(){},active:false};},paintProofreadActions(){},
