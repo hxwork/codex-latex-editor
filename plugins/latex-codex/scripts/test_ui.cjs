@@ -69,8 +69,8 @@ function settleAnimation(){for(let i=0;animationFrames.size&&i<120;i++)flushAnim
 const context = vm.createContext({
   preferences:{getItem(key){return stored.get(key);},setItem(key,value){stored.set(key,value);}},
   t:key=>key, setText:(element,key,values={})=>{element.textContent=key.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);},initSettings(){}, initScreenshotThemes(){}, applyCustomTheme(){return false;},
-  attachMathHover(){return {setMainSource(){}};},attachNativeAnnotations(){},attachSelectionChat(){return {open(){chatOpened.push('full');},openQuick(anchor){chatOpened.push(anchor);},refreshAnnotations(){},busy:false};},attachHistory(){},mountHistoryTabs(){},katex:{},
-  attachProjectReview(){return {items:[],busy:false,refresh:async()=>{},clear(){}};},
+  attachMathHover(){return {setMainSource(){}};},attachNativeAnnotations(){},attachSelectionChat(){return context.bulkChatApi={open(){chatOpened.push('full');},openQuick(anchor){chatOpened.push(anchor);},refreshAnnotations(){},busy:false};},attachHistory(){},mountHistoryTabs(){},katex:{},
+  attachProjectReview(){return context.bulkProjectApi={items:[],busy:false,refresh:async()=>{},clear(){}};},
   attachProofreadPdf(){return {update(){},invalidate(){},active:false};},paintProofreadActions(){},
   attachProofreadNavigation(config){config.button.navigation=config;return {update(){}};},proofreadPdfPositions(){return [];},
   mountRuntimeReload(){return {check(){}};},
@@ -1269,6 +1269,23 @@ Every square is nonnegative.
   console.log('PASS: rectangular selection context menu/copy, exact prose mapping, intact inline formulas, omitted-text rejection and stale-box protection');
   console.log('PASS: inverse source switching, fixed main download, shared metadata, pending-comment protection and save-before-switch');
   console.log('PASS: slow state polling stays single-flight and resumes after completion');
+const bulkButton=element('#proofread-keep-all'),bulkOrder=[];
+context.bulkPending={doc:editor.getDoc(),review:{},original:'pending text',marker:{find:()=>({from:{line:0,ch:0},to:{line:0,ch:12}})}};
+editor.getRange=()=> 'pending text';
+vm.runInContext('localReviewItems=[bulkPending];updateAcceptAll()',context);
+assert.equal(bulkButton.hidden,false);assert.equal(bulkButton.disabled,false);
+context.bulkProjectApi.keepAll=async()=>{bulkOrder.push('project');context.bulkProjectApi.items=[];};
+context.bulkChatApi.keepAll=async()=>{bulkOrder.push('ai');vm.runInContext('localReviewItems=[]',context);};
+context.bulkChatApi.busy=true;await bulkButton.onclick();assert.equal(bulkButton.disabled,true);assert.equal(bulkOrder.length,0);
+context.bulkChatApi.busy=false;
+const bulkFind=context.bulkPending.marker.find;context.bulkPending.marker.find=()=>null;
+await bulkButton.onclick();assert.equal(bulkOrder.length,0,'Validate AI anchors before accepting external reviews.');
+assert.match(element('#status').textContent,/选区已变化/);
+context.bulkPending.marker.find=bulkFind;context.bulkProjectApi.items=[{review:{}}];
+await bulkButton.onclick();assert.deepEqual(bulkOrder,['project','ai']);
+assert.equal(bulkButton.hidden,true);assert.equal(bulkButton.attributes['aria-busy'],'false');
+assert.equal(element('#status').textContent,'已接受当前文件的全部校对修改。');
+console.log('PASS: one source-pane bulk-accept entry, shared AI/project actions, busy exclusion, stale-anchor preflight and automatic hiding');
   console.log('PASS: transient connection recovery, safe Send retry and no duplicate saves');
   console.log('PASS: exact PDF text ranges, whitespace, ligatures, line hyphenation, ambiguity rejection, both Codex entries and stale mapping protection');
   console.log('PASS: repeated PDF text context, compiled row disambiguation, adjacent prose/math retries, intact links, shared list labels and unchanged fast-path requests');

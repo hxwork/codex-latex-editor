@@ -49,6 +49,7 @@ const events={},editor={
   getCursor:key=>selection[key],getValue:()=>source,getRange:(from,to)=>source.slice(from.ch,to.ch),
   charCoords:pos=>({top:pos.ch===selection.from.ch?700:710,bottom:730}),
   markText(from,to,options={}){mark={options,from:{...from},to:{...to},find(){return this.cleared?null:{from:this.from,to:this.to};},clear(){this.cleared=true;},changed(){}};marks.push(mark);return mark;},
+  setBookmark(point,options={}){return this.markText(point,point,options);},
   indexFromPos:pos=>pos.ch,posFromIndex:ch=>({line:0,ch}),setCursor(){},focus(){},
   operation(fn){operations++;fn();},
   replaceRange(text,from,to,origin){
