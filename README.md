@@ -5,7 +5,7 @@
 Edit LaTeX and Markdown in the Codex side panel, with local previews, autosave and history.
 
 - Source/PDF navigation, PDF text selection and formula box selection.
-- **Send** proposes edits through your signed-in Codex; review each change with **Keep / Undo** in source and PDF.
+- **Send** proposes edits through your signed-in GitHub Copilot CLI; review each change with **Keep / Undo** in source and PDF.
 - Model and reasoning controls, writing styles and project chat.
 - Live Markdown previews and PDF compilation using your existing TeX installation.
 

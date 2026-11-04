@@ -3,8 +3,10 @@ import {t} from './latex-settings.mjs';
 export function attachNativeAnnotations(editor, setText, document = globalThis.document) {
   const $ = id => document.getElementById(id);
   const button = $('native-annotation-open'), status = $('status'), hint = $('native-annotation-status');
-  if (document.documentElement?.dataset?.aiBackend === 'deepseek') {
+  // The in-page annotation bridge (document.oai) exists only in the Codex app browser.
+  if (['deepseek', 'copilot'].includes(document.documentElement?.dataset?.aiBackend)) {
     button.hidden = true;
+    button.disabled = true;
     hint.hidden = true;
     return;
   }

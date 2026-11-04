@@ -113,7 +113,7 @@ el('#chat-quick-models').children.find(button=>button.textContent==='Test Model 
 assert.equal(el('#chat-effort').value,'high','Reopening the same model retains the chosen effort.');
 el('#chat-quick-models').children.find(button=>button.textContent==='Other Model ›').onclick();
 assert.equal(el('#chat-effort').value,'');assert.equal(el('#chat-quick-efforts').children.length,2);
-el('#chat-quick-models').children.find(button=>button.textContent==='跟随 Codex 默认').onclick();
+el('#chat-quick-models').children.find(button=>button.textContent==='跟随 Copilot 默认').onclick();
 assert.equal(el('#chat-model').value,'');assert.equal(el('#chat-effort').disabled,true);
 el('#chat-quick').hidePopover();
 chat.open();assert.equal(el('#chat-selection').textContent,'chosen');

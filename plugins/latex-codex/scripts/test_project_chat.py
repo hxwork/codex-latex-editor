@@ -12,13 +12,13 @@ with tempfile.TemporaryDirectory() as directory:
     path.write_text('First selection. Second selection.',encoding='utf-8')
     memory=History(path)
     answer={'reply':'Remembered terminology.','replacement':None}
-    event={'type':'item.completed','item':{'type':'agent_message','text':json.dumps(answer)}}
+    event={'type':'assistant.message','data':{'content':json.dumps(answer)}}
     process=Mock(returncode=0)
     process.communicate.return_value=(json.dumps(event).encode(),b'')
     data={'source':path.read_text(encoding='utf-8'),'selection':'First selection.',
           'messages':[{'role':'user','content':'Use energy norm throughout.'}]}
     context=chat_context(data,path)
-    with patch('chat.codex_executable',return_value='codex.exe'),patch('chat.subprocess.Popen',return_value=process):
+    with patch('copilot_cli.copilot_executable',return_value='copilot'),patch('chat.subprocess.Popen',return_value=process):
         job=ChatJob(context,memory,0);job.run()
         assert job.result['status']=='done' and job.result['memory_revision']==2
     state=History(path).chat_read()

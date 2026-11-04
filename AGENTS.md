@@ -16,7 +16,7 @@
 
 `latex-codex@latex-codex-shared` 是原生插件。普通安装和更新保持此 ID，不安装 DeepSeek。
 
-先检查已登录的 Codex 桌面应用与 CLI、Python 3.10+、本地 TeX Live / MiKTeX / MacTeX。TeX 环境需提供 `xelatex` / `pdflatex` 和 `synctex`；文献按项目所选后端需要 `bibtex` 或 `biber`。缺少依赖时说明缺项，不自动安装 TeX 环境或更改全局设置。前端资源已随插件附带，无需 npm、pip 或 Poppler 安装。PDF 页尺寸与文字位置由自带 PDF.js 读取，服务端只调用本地 TeX / SyncTeX。macOS 优先使用 PATH 中的 TeX，找不到时检查 `/Library/TeX/texbin`，不修改全局 PATH。Windows / Linux 的系统文件选择器使用可选的 tkinter；缺少时仍可通过启动命令打开文稿。macOS 使用系统原生文件选择器。
+先检查已登录（`copilot login`）的 GitHub Copilot CLI、Python 3.10+、本地 TeX Live / MiKTeX / MacTeX。TeX 环境需提供 `xelatex` / `pdflatex` 和 `synctex`；文献按项目所选后端需要 `bibtex` 或 `biber`。缺少依赖时说明缺项，不自动安装 TeX 环境或更改全局设置。前端资源已随插件附带，无需 npm、pip 或 Poppler 安装。PDF 页尺寸与文字位置由自带 PDF.js 读取，服务端只调用本地 TeX / SyncTeX。macOS 优先使用 PATH 中的 TeX，找不到时检查 `/Library/TeX/texbin`，不修改全局 PATH。Windows / Linux 的系统文件选择器使用可选的 tkinter；缺少时仍可通过启动命令打开文稿。macOS 使用系统原生文件选择器。
 
 用户要求原生插件安装或更新时，在仓库根目录执行：
 
@@ -85,7 +85,9 @@ python plugins/latex-codex/scripts/editor.py /path/to/project/paper/main.tex --p
 
 同一启动命令也支持 UTF-8 `.md` / `.markdown`；默认在浏览器本地实时预览，不调用 TeX。支持常用 Markdown、代码块、表格、KaTeX 公式及 Obsidian `![[图片名.png]]` 引用；图片限于笔记目录或其 Obsidian 库内，实时预览允许 PNG/JPG/GIF/WebP/AVIF。点击“PDF 预览”使用本地 XeLaTeX，将笔记转换为行号对应的临时 TeX，跳过 YAML frontmatter，渲染 callout、双链显示文本和 TikZ 代码块，沿用 PDF 目录、SyncTeX 双向跳转、选字/框选批注、下载及历史 PDF 对比；点击“实时预览”切回 HTML。PDF 图片支持 PNG/JPG/PDF，其他格式显示提示；TikZ 需现有 TeX 环境提供相应包，缺少时不自动安装。打开和编译保留原笔记字节，转换文件和图片副本仅在构建目录中生成。自动保存、Vim/Emacs、搜索、源码批注、AI 修改和历史沿用现有流程；Markdown AI 修改不插入 TeX 颜色命令。HTML 渲染与定位在 `scripts/vendor/latex-markdown.{mjs,css}`，资源边界在 `scripts/markdown_source.py`；PDF 转换在 `scripts/obsidian_tex.py`，适配自用户提供的 LaTeX Sidecar 16.22.00。检查在 `test_markdown.py`、`test_markdown.mjs`、`test_markdown_pdf.py`、`test_highlight.cjs` 和 `test_ui.cjs`。
 
-打开终端打印的回环地址；AI 功能使用已登录的 Codex CLI。完整操作说明见 `plugins/latex-codex/skills/latex-codex/SKILL.md`。
+打开终端打印的回环地址；AI 功能使用已登录的 GitHub Copilot CLI，无需 Codex 登录。完整操作说明见 `plugins/latex-codex/skills/latex-codex/SKILL.md`。
+
+Copilot 适配在 `scripts/copilot_cli.py`：CLI 优先 `COPILOT_CLI_PATH`，其次 PATH。每次请求在空临时目录以 `copilot -C <临时目录> --output-format json --stream off --no-ask-user --no-custom-instructions --disable-builtin-mcps --disallow-temp-dir` 运行，提示词经 stdin 传入；不传 `--allow-all-tools`，提示模式下工具请求被拒绝。Copilot CLI 没有 `--output-schema`，所需 JSON Schema 写入提示词，取最后一条 `assistant.message`，按 Schema 校验后才应用；不合格式或 CLI 报错（stderr）显示错误并保留批注。模型列表读取 `copilot help config` 中 `model` 设置的目录；账号或组织不可用的模型、模型不支持的思考等级由 CLI 报错提示，选“跟随默认”可绕过。未选模型时不传思考等级。Copilot 后端不读取主对话上下文（`main_conversation` 恒为不可用）。页面以 `data-ai-backend="copilot"` 标记、标题为“LaTeX · GitHub Copilot”；Codex 原生浏览器批注依赖 Codex 应用注入的 `document.oai`，Copilot 后端与 DeepSeek 一样隐藏并禁用该入口（`vendor/latex-native-annotations.mjs`，检查在 `test_native_annotations.mjs`）。检查在 `test_chat.py`、`test_project_chat.py` 与 `test_overleaf_sync.py`。
 
 编辑会自动保存到当前源码文件；主编译文件保持固定。默认项目根目录是主文件所在目录，可在“文件 → 项目设置”或启动参数 `--project-root` 中指定包含正文和附录的共同目录。TeX 的相对引用仍从主文件所在目录解析。源码文件选择器和 PDF 反向跳转可打开项目内的 `\input` / `\include` 文件；历史与对话统一保存在项目根目录的 `.latex-codex/history.sqlite3`，源码历史保留项目相对路径，历史面板按时间统一显示主文件与所有子文件的记录；每条记录显示文件名，对比和恢复使用该记录所属的文件。项目内所有 UTF-8 `.tex` / `.md` / `.markdown` 源码在启动及状态轮询时记录，未打开的子文件修改也会被捕获。仅在查看历史“PDF 改动”时，将每处修改前后的 PNG 对比图（包含整句标红）存入 `.latex-codex/pdf-diff-cache/`；普通编译不保存完整 PDF 或 SyncTeX 存档。再次查看直接读图，缺失或损坏时按需编译生成；“重新编译”强制更新这一组对比图。跨页改动按页保存，新增或删除的一侧显示空白说明。缓存可删除，每项目上限 256 MiB，30 天未使用的存档在缓存读写时清理；源码历史不受影响。失败编译或未完成的渲染不覆盖已有对比图。旧版 `.latex-codex/pdf-cache/` 已停用，可删除。永久历史在同一项目数据库中记录各源码文件；子文件的历史 PDF 通过临时源码覆盖编译主文件，使用其余依赖的当前版本。切换源码前保存当前修改；未发送的批注或正在生成的回复需先处理。PDF 选区不可一次跨越多个源码文件。文献编译根据本次 TeX 生成的 `.bcf` / `.aux` 自动选择 Biber / BibTeX，处理后再运行两遍 TeX；控制文件和文献内容未变时复用结果。项目内 `.bib` / `.bst` 修改会使自动预览和源码定位失效。Biber 从主文稿所在目录解析相对文献路径，产物保留在临时构建目录；历史和校对预览共用此流程。缺工具或处理失败保留上一份正常 PDF 并报告失败，不自动安装。切换文献包导致旧辅助文件不兼容时仅清理临时文献产物并重试一次。远程或通配文献输入不缓存；项目根外的文献修改尚不自动跟踪；`makeindex` 等其他外部处理器目前不自动调用。检查在 `test_bibliography.py` 和 `test_editor.py`。
 
@@ -123,7 +125,7 @@ PDF 拖选和框选共用正文定位规则，并保留选区前后各最多 80 
 
 LaTeX 批注建议同时生成临时 PDF 校对预览：原选区全文标红，建议全文标绿，PDF 页边的每处 Keep / Undo 与源码校对卡片共享操作。`/proofread` 在独立临时目录覆盖当前草稿并编译主文件（含子文件相对依赖）；不写真实源码、历史版本、历史 PDF 缓存，也不覆盖正式 PDF / SyncTeX。临时 PDF 仅在服务内存保留最近两份，临时源码和构建文件立即清理；普通 PDF 下载仍导出正式文稿。预览期间停用正式源码定位，处理完建议恢复正常 PDF；失败保留原 PDF 和建议。Keep 沿用正式保存及历史检查点流程，Undo 不新增历史。实现为 `scripts/proofread.py`、`vendor/latex-proofread-pdf.mjs` 和现有编译适配；检查覆盖 `test_proofread_pdf.py` / `.mjs`，共享的临时源码编译沿用 `test_history_pdf.py`。
 
-历史活动流统一显示整个项目的记录，按每条记录所属源码文件的章节定位改动，同一文件的五分钟保存组与对比基线保持独立。恢复另一文件前保存当前编辑草稿，并校验当前文件与目标文件的版本。鼠标移入记录栏时，使用已登录的 Codex CLI 在后台概括尚未缓存的记录，每批最多 12 个；摘要跟随界面语言，按版本、对比基线和语言分别存入现有历史数据库，不进入项目问答。旧版摘要保留为简体中文缓存，切换语言会取消旧请求并复用或生成对应语言的摘要。摘要失败仍显示本地章节位置，关闭历史会取消未完成请求。
+历史活动流统一显示整个项目的记录，按每条记录所属源码文件的章节定位改动，同一文件的五分钟保存组与对比基线保持独立。恢复另一文件前保存当前编辑草稿，并校验当前文件与目标文件的版本。鼠标移入记录栏时，使用已登录的 Copilot CLI 在后台概括尚未缓存的记录，每批最多 12 个；摘要跟随界面语言，按版本、对比基线和语言分别存入现有历史数据库，不进入项目问答。旧版摘要保留为简体中文缓存，切换语言会取消旧请求并复用或生成对应语言的摘要。摘要失败仍显示本地章节位置，关闭历史会取消未完成请求。
 
 第三方资源许可证必须保留，来源和版本见 `plugins/latex-codex/scripts/vendor/README.md`。PDF.js 主程序、worker、viewer 和配套资源需一起更新。当前 API / worker 含两处本地扩展：暴露原始 MediaBox，并支持按 glyph 读取精确文字位置；更新上游时保留这些扩展和 `test_history_pdf.py` / `test_editor.py` 的裁切、跨页检查。Node 仅用于维护测试的 PDF.js runner，插件运行时无需 Node。
 
@@ -133,7 +135,7 @@ Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于
 
 顶部“同步到 Overleaf”沿用保存流程保存草稿，通过当前分支 upstream 的唯一 git.overleaf.com 远程执行 fetch、本地 commit、隔离三方合并、普通 push 和远程验证。只处理项目内选定的草稿，排除编译产物、历史库及本地配置；已有本地提交也可同步。禁止 force push，远程竞争更新拒绝推送并保留本地提交。不改变认证或全局 Git 设置。
 
-三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Codex CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。
+三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Copilot CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。
 
 实现为 scripts/overleaf_sync.py 与 editor.py。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。
 

@@ -12,22 +12,8 @@ import tempfile
 import threading
 import uuid
 
+from copilot_cli import copilot_answer, copilot_command, copilot_models, schema_instructions
 from history import SUMMARY_LANGUAGES, summary_language, word_changes
-
-
-def codex_executable():
-    # The desktop app supplies its current CLI; PATH may still contain an older installation.
-    app_cli = os.environ.get('CODEX_CLI_PATH')
-    if app_cli and Path(app_cli).is_file():
-        return app_cli
-    executable = shutil.which('codex.exe') or shutil.which('codex')
-    if not executable:
-        candidate = Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs/OpenAI/Codex/bin/codex.exe'
-        if candidate.is_file():
-            executable = str(candidate)
-    if not executable:
-        raise ValueError('未找到 Codex CLI。请安装并登录 Codex 后重试。')
-    return executable
 
 
 @lru_cache(maxsize=1)
@@ -35,17 +21,7 @@ def chat_models(backend='codex'):
     if backend == 'deepseek':
         from deepseek import dsh_models
         return dsh_models()
-    try:
-        result = subprocess.run([codex_executable(), 'debug', 'models'], capture_output=True, timeout=25,
-                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
-        if result.returncode:
-            raise ValueError('模型列表读取失败，可继续使用默认模型。')
-        return [{'id': model['slug'], 'name': model['display_name'],
-                 'efforts': [level['effort'] for level in model['supported_reasoning_levels']],
-                 'default_effort': model['default_reasoning_level']}
-                for model in json.loads(result.stdout)['models'] if model.get('visibility') == 'list']
-    except (OSError, subprocess.TimeoutExpired, KeyError, ValueError) as error:
-        raise ValueError('无法读取 Codex 模型列表，可继续使用默认模型。') from error
+    return copilot_models()
 
 
 def revision_segments(before, after):
@@ -264,7 +240,6 @@ class ChatJob:
 
     def run(self):
         try:
-            executable = codex_executable() if self.backend == 'codex' else None
             annotations = self.context.get('annotations')
             markdown = Path(self.context.get('file', '')).suffix.lower() in ('.md', '.markdown')
             format_name = 'Markdown' if markdown else 'LaTeX'
@@ -332,24 +307,15 @@ class ChatJob:
                     process_options = {'cwd': directory, 'env': environment}
                     instructions += 'Return ONLY one JSON object conforming to this schema: ' + json.dumps(schema) + '\n'
                 else:
-                    schema_file = Path(directory) / 'response.json'
-                    schema_file.write_text(json.dumps(schema), encoding='utf-8')
-                    command = [executable, 'exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'read-only',
-                               '--json', '--color', 'never', '--output-schema', str(schema_file), '-C', directory]
-                    if self.context.get('model'):
-                        command.extend(['--model', self.context['model']])
-                    if self.context.get('effort'):
-                        command.extend(['-c', 'model_reasoning_effort=' + json.dumps(self.context['effort'])])
-                    for feature in ('shell_tool', 'apps', 'plugins', 'hooks', 'multi_agent', 'computer_use', 'browser_use', 'image_generation'):
-                        command.extend(['--disable', feature])
-                    command.append('-')
+                    command = copilot_command(directory, self.context.get('model', ''), self.context.get('effort', ''))
+                    instructions += schema_instructions(schema)
                 self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
                     **process_options)
                 if self.cancelled.is_set():
                     self.cancel()
                 try:
-                    stdout, _ = self.process.communicate(
+                    stdout, stderr = self.process.communicate(
                         (instructions + json.dumps(self.context, ensure_ascii=False)).encode('utf-8'), timeout=180)
                 except subprocess.TimeoutExpired:
                     already_cancelled = self.cancelled.is_set()
@@ -361,7 +327,7 @@ class ChatJob:
                 if self.backend == 'deepseek':
                     result = dsh_answer(stdout, self.process.returncode)
                 else:
-                    result = self.codex_answer(stdout)
+                    result = copilot_answer(stdout, self.process.returncode, schema, stderr)
                 if summarizing:
                     if not isinstance(result,dict) or not isinstance(result.get('summaries'),list):
                         raise ValueError('AI 改动摘要格式无效。')
@@ -400,19 +366,3 @@ class ChatJob:
                 self.result = {'status': 'error', 'error': str(error)}
         finally:
             self.context = None
-
-    def codex_answer(self, stdout):
-        answer, error = None, ''
-        for line in stdout.decode('utf-8', errors='replace').splitlines():
-            try:
-                event = json.loads(line)
-            except ValueError:
-                continue
-            item = event.get('item', {})
-            if event.get('type') == 'item.completed' and item.get('type') == 'agent_message':
-                answer = item.get('text')
-            if event.get('type') in ('error', 'turn.failed'):
-                error = event.get('message') or event.get('error', {}).get('message', '')
-        if self.process.returncode or answer is None:
-            raise ValueError(error or 'Codex 未返回结果，请确认 CLI 登录状态和网络后重试。')
-        return json.loads(answer)

@@ -5,7 +5,7 @@
 在 Codex 侧边栏编辑 LaTeX 和 Markdown，支持本地预览、自动保存和历史。
 
 - 源码与 PDF 双向跳转、PDF 选字与公式框选。
-- **Send** 使用已登录的 Codex 生成修改建议，源码与 PDF 逐处 **Keep / Undo**。
+- **Send** 使用已登录的 GitHub Copilot CLI 生成修改建议，源码与 PDF 逐处 **Keep / Undo**。
 - 支持模型与思考等级选择、写作风格和项目对话。
 - Markdown 实时预览，以及通过现有 TeX 环境生成 PDF。
 

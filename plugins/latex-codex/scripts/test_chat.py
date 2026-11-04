@@ -5,16 +5,21 @@ import shutil
 import subprocess
 import tempfile
 from unittest.mock import Mock, patch
-from chat import ChatJob, chat_context, chat_models, codex_executable, main_chat_context, revision_segments
+from chat import ChatJob, chat_context, chat_models, main_chat_context, revision_segments
+from copilot_cli import copilot_executable
+
+
+def assistant(value):
+    return {'type': 'assistant.message', 'data': {'content': json.dumps(value)}}
 
 
 with tempfile.TemporaryDirectory() as directory:
-    current_cli = Path(directory) / 'codex.exe'
+    current_cli = Path(directory) / 'copilot'
     current_cli.touch()
-    with patch.dict('os.environ', {'CODEX_CLI_PATH':str(current_cli)}), patch('chat.shutil.which', return_value='older-codex.exe'):
-        assert codex_executable() == str(current_cli), 'Use the running desktop CLI ahead of stale PATH entries.'
+    with patch.dict('os.environ', {'COPILOT_CLI_PATH':str(current_cli)}), patch('copilot_cli.shutil.which', return_value='path-copilot'):
+        assert copilot_executable() == str(current_cli), 'An explicit COPILOT_CLI_PATH wins over PATH.'
         current_cli.unlink()
-        assert codex_executable() == 'older-codex.exe', 'Keep PATH fallback for launches outside the app.'
+        assert copilot_executable() == 'path-copilot', 'Keep PATH fallback.'
 
 data = {'source': 'Before. Selected. After.', 'selection': 'Selected.',
         'messages': [{'role': 'user', 'content': 'Polish this.'}]}
@@ -51,22 +56,25 @@ for invalid in ({**data, 'selection': 'not in document'}, {**data, 'messages': [
     else:
         raise AssertionError('Invalid input accepted')
 answer = {'reply': '已准备建议。', 'replacement': 'Revised.'}
-event = {'type': 'item.completed', 'item': {'type': 'agent_message', 'text': json.dumps(answer)}}
+event = assistant(answer)
 process = Mock(returncode=0)
 process.communicate.return_value = (json.dumps(event).encode(), b'')
-with patch('chat.shutil.which', return_value='codex.exe'), patch('chat.subprocess.Popen', return_value=process) as spawn:
+with patch('copilot_cli.shutil.which', return_value='copilot'), patch('chat.subprocess.Popen', return_value=process) as spawn:
     job = ChatJob(context)
     job.run()
     assert job.result == {'status': 'done', **answer, 'segments': revision_segments(data['selection'], answer['replacement'])}
     assert job.context is None
     argv = spawn.call_args.args[0]
-    assert '--ephemeral' in argv and argv[argv.index('--sandbox') + 1] == 'read-only'
+    assert '--allow-all-tools' not in argv and '--allow-all' not in argv, 'Prompt mode must deny every tool.'
+    assert '--no-custom-instructions' in argv and '--disable-builtin-mcps' in argv
+    assert Path(argv[argv.index('-C') + 1]).name.startswith('latex-chat-')
+    assert 'JSON schema' in process.communicate.call_args.args[0].decode()
     prompt = process.communicate.call_args.args[0].decode()
     assert 'Before. Selected. After.' in prompt and 'Polish this.' in prompt
     assert 'Keep my terminology.' in prompt and 'A new preference.' in prompt
     assert 'Hidden instructions' not in prompt and 'tool secret' not in prompt
     assert 'Selected.' not in ' '.join(argv), 'Context belongs on stdin, not command arguments.'
-    assert '--model' not in argv and '-c' not in argv, 'Default must preserve the CLI configuration.'
+    assert '--model' not in argv and '--reasoning-effort' not in argv, 'Default must preserve the CLI configuration.'
     markdown_job = ChatJob(chat_context(data, Path('note.md'))); markdown_job.run()
     assert markdown_job.result == {'status':'done', **answer, 'segments':None}
     markdown_prompt = process.communicate.call_args.args[0].decode()
@@ -78,7 +86,7 @@ with patch('chat.shutil.which', return_value='codex.exe'), patch('chat.subproces
         ChatJob(configured).run()
         argv = spawn.call_args.args[0]
         assert argv[argv.index('--model') + 1] == 'test-model'
-        assert argv[argv.index('-c') + 1] == 'model_reasoning_effort="high"'
+        assert argv[argv.index('--reasoning-effort') + 1] == 'high'
         assert chat_context({**data,'model':'test-model'}, Path('paper.tex'))['effort'] == 'low'
         for model, effort in [('unknown','low'), ('test-model','ultra'), ('','high'), ([], '')]:
             try:
@@ -87,7 +95,7 @@ with patch('chat.shutil.which', return_value='codex.exe'), patch('chat.subproces
                 pass
             else:
                 raise AssertionError('Invalid model/effort accepted')
-    process.communicate.return_value = (b'{"type":"turn.failed","error":{"message":"Offline"}}', b'')
+    process.communicate.return_value = (b'{"type":"session.error","data":{"message":"Offline"}}', b'')
     process.returncode = 1
     failed = ChatJob(context); failed.run()
     assert failed.result == {'status': 'error', 'error': 'Offline'}
@@ -127,13 +135,12 @@ for bad in ([], [None], [{**batch['annotations'][0], 'start': 3}],
         pass
     else:
         raise AssertionError('Invalid annotations accepted')
-with patch('chat.codex_executable', return_value='codex.exe'), patch('chat.subprocess.Popen') as spawn:
+with patch('copilot_cli.copilot_executable', return_value='copilot'), patch('chat.subprocess.Popen') as spawn:
     process = Mock(returncode=0)
     spawn.return_value = process
 
     def run_batch(replacements):
-        process.communicate.return_value = (json.dumps({'type': 'item.completed', 'item': {
-            'type': 'agent_message', 'text': json.dumps({'reply': 'Reviewed.', 'replacements': replacements})}}).encode(), b'')
+        process.communicate.return_value = (json.dumps(assistant({'reply': 'Reviewed.', 'replacements': replacements})).encode(), b'')
         job = ChatJob(batch_context)
         job.run()
         return job.result
@@ -164,9 +171,9 @@ print('PASS: batch prompts contain only annotated ranges and bounded nearby sour
 
 items = [{'id':7,'baseline':1,'sections':['2.1 Stability'],'diff':'- x^2\n+ x^3'}]
 summaries = [{'id':7,'summary':'将稳定性估计中的平方项改为立方项。'}]
-with patch('chat.codex_executable',return_value='codex.exe'), patch('chat.subprocess.Popen') as spawn:
+with patch('copilot_cli.copilot_executable',return_value='copilot'), patch('chat.subprocess.Popen') as spawn:
     process = Mock(returncode=0)
-    process.communicate.return_value=(json.dumps({'type':'item.completed','item':{'type':'agent_message','text':json.dumps({'summaries':summaries})}}).encode(),b'')
+    process.communicate.return_value=(json.dumps(assistant({'summaries':summaries})).encode(),b'')
     spawn.return_value=process
     for language, name in [('en','English'),('zh-CN','Simplified Chinese'),('zh-TW','Traditional Chinese'),('ja','Japanese'),
                            ('fr','French'),('de','German'),('es','Spanish'),('invalid','English')]:
@@ -178,12 +185,13 @@ with patch('chat.codex_executable',return_value='codex.exe'), patch('chat.subpro
         assert f'concise {name} for a history activity feed' in process.communicate.call_args.args[0].decode()
         assert job.context is None
 
-catalog = {'models':[{'slug':'visible','display_name':'Visible','visibility':'list',
-                     'default_reasoning_level':'low','supported_reasoning_levels':[{'effort':'low'}]},
-                    {'slug':'hidden','visibility':'hide'}]}
-with patch('chat.codex_executable', return_value='codex.exe'), patch('chat.subprocess.run', return_value=Mock(returncode=0,stdout=json.dumps(catalog).encode())) as run:
+catalog = b'  `logLevel`: log level.\n\n  `model`: AI model to use.\n    - "model-a"\n    - "model-b"\n\n  `contextTier`: tier.\n    - "other"\n'
+with patch('copilot_cli.copilot_executable', return_value='copilot'), patch('copilot_cli.subprocess.run', return_value=Mock(returncode=0,stdout=catalog)) as run:
     chat_models.cache_clear()
-    assert chat_models() == [{'id':'visible','name':'Visible','efforts':['low'],'default_effort':'low'}]
+    efforts = ['low', 'medium', 'high', 'xhigh']
+    assert chat_models() == [{'id':'model-a','name':'model-a','efforts':efforts,'default_effort':''},
+                             {'id':'model-b','name':'model-b','efforts':efforts,'default_effort':''}]
+    assert run.call_args.args[0] == ['copilot', 'help', 'config']
     assert chat_models() == chat_models() and run.call_count == 1
     chat_models.cache_clear()
 
@@ -226,3 +234,21 @@ if shutil.which('pdflatex') and shutil.which('node'):
         compiled = subprocess.run(['pdflatex','-no-shell-escape','-halt-on-error','-interaction=nonstopmode',source.name],cwd=directory,capture_output=True,timeout=40)
         assert compiled.returncode == 0, compiled.stdout.decode(errors='replace')[-3000:]
     print('PASS: frontend-rendered changes compile (formulas, scripts, comments and existing color)')
+
+from copilot_cli import copilot_answer
+schema = {'type':'object','properties':{'reply':{'type':'string'},'replacement':{'type':['string','null']}},
+          'required':['reply','replacement'],'additionalProperties':False}
+fenced = json.dumps({'type':'assistant.message','data':{'content':'```json\n{"reply":"ok","replacement":null}\n```'}}).encode()
+assert copilot_answer(fenced, 0, schema) == {'reply':'ok','replacement':None}
+for content in ('{"reply":"ok"}', '{"reply":1,"replacement":null}', '{"reply":"ok","replacement":null,"extra":1}', 'Sure! {"reply":"ok"}', '[]'):
+    try:
+        copilot_answer(json.dumps({'type':'assistant.message','data':{'content':content}}).encode(), 0, schema)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Unvalidated Copilot output accepted: ' + content)
+try:
+    copilot_answer(b'', 1, schema, b'Error: Model "x" from --model flag is not available.\n')
+except ValueError as error:
+    assert str(error) == 'Model "x" from --model flag is not available.'
+print('PASS: Copilot JSON output is schema-validated and CLI errors are surfaced')

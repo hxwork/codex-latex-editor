@@ -12,7 +12,7 @@ import threading
 from urllib.parse import urlsplit
 import uuid
 
-from chat import codex_executable
+from copilot_cli import copilot_answer, copilot_command, schema_instructions
 
 
 def run(root, *args, check=True, timeout=45):
@@ -119,27 +119,18 @@ Classify minor ONLY when meaning is demonstrably unchanged (formatting, equivale
                 row['truncated'] |= len(value)>7000
             context.append(row)
         with tempfile.TemporaryDirectory(prefix='latex-conflict-ai-') as directory:
-            schema_file = Path(directory)/'schema.json'; schema_file.write_text(json.dumps(schema))
-            command = [codex_executable(),'exec','--ephemeral','--skip-git-repo-check','--sandbox','read-only',
-                       '--json','--color','never','--output-schema',str(schema_file),'-C',directory]
-            for feature in ('shell_tool','apps','plugins','hooks','multi_agent','computer_use','browser_use','image_generation'):
-                command += ['--disable',feature]
-            result = subprocess.run([*command,'-'], input=(instructions+json.dumps(context,ensure_ascii=False)).encode(),
-                                    capture_output=True, timeout=180)
-            answer = None
-            for line in result.stdout.decode('utf-8','replace').splitlines():
-                try: event = json.loads(line)
-                except ValueError: continue
-                if event.get('type')=='item.completed' and event.get('item',{}).get('type')=='agent_message':
-                    answer = event['item'].get('text')
-            if result.returncode or not answer:
-                raise ValueError('Codex 冲突分析不可用；已保留三方文本和保守初判。')
-            rows = json.loads(answer).get('items')
+            try:
+                result = subprocess.run(copilot_command(directory),
+                                        input=(instructions+schema_instructions(schema)+json.dumps(context,ensure_ascii=False)).encode(),
+                                        capture_output=True, timeout=180)
+                rows = copilot_answer(result.stdout, result.returncode, schema, result.stderr)['items']
+            except (OSError, subprocess.TimeoutExpired, ValueError) as error:
+                raise ValueError('Copilot 冲突分析不可用；已保留三方文本和保守初判。') from error
             if not isinstance(rows,list) or len(rows)!=len(batch) or {row.get('id') for row in rows} != {row['id'] for row in batch}:
-                raise ValueError('Codex 冲突分析不完整；已保留三方文本和保守初判。')
+                raise ValueError('Copilot 冲突分析不完整；已保留三方文本和保守初判。')
             for row in rows:
                 if row.get('severity') not in ('minor','critical','uncertain') or row.get('confidence') not in ('high','medium','low') or not isinstance(row.get('reason'),str) or not isinstance(row.get('recommendation'),str):
-                    raise ValueError('Codex 冲突分析格式无效。')
+                    raise ValueError('Copilot 冲突分析格式无效。')
                 original = next(item for item in batch if item['id']==row['id'])
                 if original['analysis']['severity']=='critical' and row['severity']=='minor':
                     row = {**original['analysis'],'id':row['id']}

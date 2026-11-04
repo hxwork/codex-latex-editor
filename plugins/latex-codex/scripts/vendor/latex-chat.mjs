@@ -151,8 +151,8 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
   };
   function renderQuickSettings() {
     const selected = models.find(model => model.id === modelSelect.value);
-    quickBrain.title = (selected?.name || t('跟随 Codex 默认')) + ' · ' + (effortSelect.value ? t(effortNames[effortSelect.value] || effortSelect.value) : t('默认思考等级'));
-    $('chat-quick-model-name').textContent = selected?.name || t('跟随 Codex 默认');
+    quickBrain.title = (selected?.name || t('跟随 Copilot 默认')) + ' · ' + (effortSelect.value ? t(effortNames[effortSelect.value] || effortSelect.value) : t('默认思考等级'));
+    $('chat-quick-model-name').textContent = selected?.name || t('跟随 Copilot 默认');
     $('chat-quick-effort-name').textContent = effortSelect.value ? t(effortNames[effortSelect.value] || effortSelect.value) : t('跟随默认');
     quickEffort.disabled = sending || !selected;
     quickEffort.title = t('思考等级') + ' · ' + (effortSelect.value || selected?.default_effort || t('跟随默认'));
@@ -160,7 +160,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
     quickEffort.dataset.level = String(selected ? Math.ceil(3 * (selected.efforts.indexOf(effortSelect.value || selected.default_effort) + 1) / selected.efforts.length) : 0);
     const modelList = $('chat-quick-models'), effortList = $('chat-quick-efforts');
     modelList.replaceChildren(); effortList.replaceChildren();
-    for (const model of [{id:'', name:t('跟随 Codex 默认')}, ...models]) {
+    for (const model of [{id:'', name:t('跟随 Copilot 默认')}, ...models]) {
       const button = document.createElement('button'); button.type = 'button';
       button.textContent = model.name + (model.id ? ' ›' : ''); button.disabled = sending;
       button.setAttribute('aria-pressed', String(model.id === modelSelect.value));
@@ -196,7 +196,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
     modelsLoading = true; $('chat-model-status').textContent = t('正在读取可用模型…'); renderQuickSettings();
     try {
       ({models} = await request('/chat/models'));
-      modelSelect.replaceChildren(option('', t('跟随 Codex 默认')), ...models.map(model => option(model.id, model.name)));
+      modelSelect.replaceChildren(option('', t('跟随 Copilot 默认')), ...models.map(model => option(model.id, model.name)));
       // Harness account routes read the stored credentials; the API route needs DEEPSEEK_API_KEY.
       const preferred = models.find(model => model.id.startsWith('deepseek-account/') && model.default)
         || models.find(model => model.id.startsWith('deepseek-account/'));
@@ -222,7 +222,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
       const context = await request('/chat/context');
       $('chat-context').textContent = context.available
         ? t('携带论文全文 + 主对话 ') + context.count + t(' 条消息') + (context.truncated ? t('（较早内容已省略）') : '')
-        : t('携带论文全文；未关联主对话，请从 Codex 主对话启动编辑器。');
+        : t('携带论文全文；Copilot 后端不读取主对话。');
     } catch(e) { $('chat-context').textContent = t('主对话读取失败：') + e.message; }
   }
   const notice = text => status.textContent = text;
@@ -389,7 +389,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
       for(const item of history){
         let text=item.content;
         if(item.role==='assistant'){try{text=JSON.parse(text).reply||text;}catch{}}
-        message(item.role==='user'?t('你'):'Codex',text);
+        message(item.role==='user'?t('你'):'Copilot',text);
       }
     })();
     memoryLoading=task;
@@ -546,8 +546,8 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
     const token = ++generation, doc = editor.getDoc();
     let conversation;
     annotationSending = !!batch;
-    if (batch) annotationNotice(t('Codex 正在处理批注…'));
-    clearProposal(); setSending(true); notice(t('Codex 正在思考…'));
+    if (batch) annotationNotice(t('Copilot 正在处理批注…'));
+    clearProposal(); setSending(true); notice(t('Copilot 正在思考…'));
     try {
       if(memoryRevision===null)await loadMemory();
       if(token!==generation||doc!==editor.getDoc())return;
@@ -574,7 +574,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
         if (result.status !== 'done') throw new Error(result.error || t('本次回复已停止。'));
         memoryRevision=result.memory_revision??memoryRevision;
         history = [...conversation, {role:'assistant',content:JSON.stringify({reply:result.reply,replacement:result.replacement,...(batch ? {replacements:result.replacements} : {})})}];
-        message('Codex', result.reply);
+        message('Copilot', result.reply);
         if (batch) {
           await reviewAnnotations(batch, result.replacements, result.reply);
           annotationNotice(annotations.some(item => item.review) ? t('请逐处选择 Keep 或 Undo；也可在批注列表处理。') : result.reply);
@@ -679,7 +679,7 @@ export function attachSelectionChat(editor, request, paintAnnotations = () => {}
     const effort = effortSelect.value;
     updateEfforts(); effortSelect.value = effort; renderQuickSettings(); renderProposal();
     renderStyle();
-    modelSelect.options[0].textContent = t('跟随 Codex 默认');
+    modelSelect.options[0].textContent = t('跟随 Copilot 默认');
     quickInput.placeholder = quickOriginal ? t('写下这处的修改要求…') : t('请先选中一段 LaTeX 源码');
     labelQuickAction();
     refreshAnnotations();
