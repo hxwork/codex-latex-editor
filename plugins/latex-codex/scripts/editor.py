@@ -640,6 +640,13 @@ async function saveAnnotationChange(source,change){
     throw e;
   }finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();}
 }
+let sourcePickerState='';
+function updateSourcePicker(data){
+  const state={files:data.files||[{path:data.path,name:data.name}],path:data.path,mainFile:data.main_file||data.path};
+  const signature=JSON.stringify(state);
+  if(signature===sourcePickerState)return;
+  sourcePicker.update(state);sourcePickerState=signature;
+}
 function display(data,preservePdf=false){
   proofreadPdf.invalidate();
   normalPdfData=preservePdf&&normalPdfData?{...normalPdfData,version:data.version,sync:data.sync,labels:data.labels,citations:data.citations}:null;
@@ -656,7 +663,7 @@ function display(data,preservePdf=false){
   saved=text;version=data.version;pdfVersion=preservePdf&&data.sync&&data.pdf_revision===pdfBuild?version:'';compiledLabels=pdfVersion?data.labels||{}:{};compiledCitations=pdfVersion?data.citations||{}:{};editor.setOption('readOnly',false);conflict=false;updateSyncControls();
   const label=document.querySelector('#filename');label.dataset.name=data.name;label.title=data.path;updateCompileCaption();
   projectRoot=data.project_root||'';mainFile=data.main_file||data.path;projectVersion=data.project_version||'';
-  sourcePicker.update({files:data.files||[{path:data.path,name:data.name}],path:data.path,mainFile});
+  updateSourcePicker(data);
   projectTree.refresh();
   configurePreview();
   if(markdown){markdownPreview.clear();markdownPreview.render(text);}
@@ -750,7 +757,7 @@ async function followGitJob(id){
       try{
         const state=await request('/state');
         if(state.source.replace(/\r\n/g,'\n')!==editor.getValue()||state.path!==document.querySelector('#filename').title)display(state,true);
-        else{version=state.version;projectVersion=state.project_version||projectVersion;mainSource=state.main_source||'';mathHover.setMainSource(mainSource);sourcePicker.update({files:state.files||[],path:state.path,mainFile});}
+        else{version=state.version;projectVersion=state.project_version||projectVersion;mainSource=state.main_source||'';mathHover.setMainSource(mainSource);updateSourcePicker({files:state.files||[],path:state.path,main_file:mainFile});}
         if(!state.sync){pdfVersion='';compiledLabels={};compiledCitations={};}
       }catch(error){setText(status,'Overleaf 已同步；请重新打开当前源码：{message}',{message:error.message});return;}
       setText(status,'Overleaf · {commit} · 已同步',{commit:data.commit});return;
@@ -1884,7 +1891,7 @@ def validate_annotation_change(change, source):
     return {**change, 'items':items}
 
 
-def save_source(path, source, version, history, kind='save', draft=None, annotation_change=None):
+def save_source(path, source, version, history, kind='save', draft=None, annotation_change=None, restored_from=None):
     change = validate_annotation_change(annotation_change, source) if annotation_change is not None else None
     before = snapshot(path)
     # CodeMirror uses LF internally; merely opening a CRLF child must not rewrite it.
@@ -1926,7 +1933,7 @@ def save_source(path, source, version, history, kind='save', draft=None, annotat
     if change:
         history.record_annotations(source, change)
     else:
-        history.record(source, kind, force=kind == 'restore')
+        history.record(source, kind, force=kind == 'restore', restored_from=restored_from)
     return snapshot(path)
 
 
@@ -3310,12 +3317,13 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                             raise FileConflict('文件已被外部修改，请先重新读取。')
                         # Save the active draft before switching, then restore only the selected file.
                         save_current(data['source'], data['version'])
-                        save_source(revision_path, revision['source'], data['target_version'], History(revision_path, root), 'restore')
+                        save_source(revision_path, revision['source'], data['target_version'], History(revision_path, root),
+                                    'restore', restored_from=revision['id'])
                         self.server.sync_version = ''
                         self.reply(200, switch_source(revision_path))
                         return
                     # Preserve even an unsaved editor draft before restoring a snapshot.
-                    save_current(revision['source'], data['version'], kind='restore', draft=data['source'])
+                    save_current(revision['source'], data['version'], kind='restore', draft=data['source'], restored_from=revision['id'])
                     self.server.sync_version = ''
                     self.reply(200, project_state())
                     return
