@@ -91,3 +91,9 @@ Additional palette sources (same CodeMirror 5 release):
 Automatic delimiter pairing: closebrackets.js from CodeMirror 5.65.20 (MIT),
 https://raw.githubusercontent.com/codemirror/codemirror5/5.65.20/addon/edit/closebrackets.js
 Local adaptations preserve escaped LaTeX delimiters, pair dollars beside prose, and respect readonly states. Existing CodeMirror license is retained.
+
+File tree icons: SVG paths from Google Material Symbols Rounded (Apache License 2.0,
+https://github.com/google/material-design-icons), weight 400, optical size 20, embedded in
+`latex-file-tree.mjs`: description, image, book_5, table_chart, code, note_add and
+create_new_folder (unfilled); chevron_right, expand_more, keyboard_arrow_right,
+keyboard_arrow_down and more_vert (filled). This matches the symbols Overleaf's file tree uses.
