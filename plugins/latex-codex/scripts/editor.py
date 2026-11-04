@@ -1969,14 +1969,21 @@ def compile_tex(path, build, source, entry=None, project_root=None, directory=No
     bcf = Path(build) / (path.stem + '.bcf')
     aux = Path(build) / (path.stem + '.aux')
     cached = Path(build) / '.bib-inputs.sha256'
+    previous_aux = {file: file.read_bytes() for file in Path(build).rglob('*.aux')}
     bcf.unlink(missing_ok=True)  # Only this TeX pass can request Biber.
     ok = run(command)
-    if not ok and aux.with_suffix('.bbl').is_file():
-        # Switching bibliography packages can make the previous .aux/.bbl unreadable.
+    if (not ok and aux.with_suffix('.bbl').is_file() and
+            (any(compile_diagnostic(logs[-1], product) for product in [*Path(build).rglob('*.aux'), aux.with_suffix('.bbl')]) or
+             re.search(r'(?:\r?\n)?'.join(re.escape(char) for char in 'not created by biblatex'), logs[-1]))):
+        # Recover incompatible auxiliaries, but keep valid bibliography caches after source errors.
         logs.append('Retrying TeX without cached bibliography auxiliaries.')
         for product in [*Path(build).rglob('*.aux'), aux.with_suffix('.bbl'), bcf, cached]:
             product.unlink(missing_ok=True)
         ok = run(command)
+    elif not ok:
+        # A halted TeX pass truncates .aux; retain the previous labels and citation numbers.
+        for product, content in previous_aux.items():
+            product.write_bytes(content)
     aux_text = compiled_aux_text(aux) if aux.exists() else ''
     processor = 'biber' if bcf.is_file() else 'bibtex' if '\\bibdata{' in aux_text and '\\citation{' in aux_text else None
     if ok and processor:
@@ -1992,7 +1999,39 @@ def compile_tex(path, build, source, entry=None, project_root=None, directory=No
             if processor == 'biber':
                 ok = run([executable, '--input-directory', str(build), '--output-directory', str(build), path.stem], cwd=directory, env=env)
             else:
-                ok = run([executable, path.stem], cwd=build, env=env)
+                originals, resources = {}, set()
+
+                def bibtex_input(match):
+                    suffix = '.bib' if match[1] == b'bibdata' else '.bst'
+                    names = []
+                    for name in match[2].split(b','):
+                        token = name.strip().strip(b'"')
+                        if token.startswith((b'./', b'../')):
+                            filename = token.decode('utf-8')
+                            dependency = Path(directory) / (filename if filename.endswith(suffix) else filename + suffix)
+                            if dependency.is_file():
+                                # Explicit relative inputs bypass BIBINPUTS/BSTINPUTS; stage them beside the job.
+                                target = Path(build) / ('latex-bibtex-' + hashlib.sha256(str(dependency.resolve()).encode()).hexdigest() + suffix)
+                                resources.add(target)
+                                shutil.copy2(dependency, target)
+                                name = target.stem.encode()
+                        names.append(name)
+                    return b'\\' + match[1] + b'{' + b','.join(names) + b'}'
+
+                try:
+                    for product in Path(build).rglob('*.aux'):
+                        content = product.read_bytes()
+                        prepared = re.sub(rb'\\(bibdata|bibstyle)\{([^{}\r\n]*)\}', bibtex_input, content)
+                        if prepared != content:
+                            originals[product] = content
+                            product.write_bytes(prepared)
+                    # TeX Live rejects absolute .blg/.bbl output paths under openout_any=p.
+                    ok = run([executable, path.stem], cwd=build, env=env)
+                finally:
+                    for product, content in originals.items():
+                        product.write_bytes(content)
+                    for resource in resources:
+                        resource.unlink(missing_ok=True)
             if ok:
                 cached.write_text(signature or '')
                 ok = run(command) and run(command)
