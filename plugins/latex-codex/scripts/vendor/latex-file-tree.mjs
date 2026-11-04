@@ -2,7 +2,7 @@ import {t} from './latex-settings.mjs';
 export function mountProjectTree({request,context,prepare,lock,open,changed,resize}){
   const panel=document.querySelector('#file-tree-panel'),toggle=document.querySelector('#file-tree-toggle'),root=document.querySelector('#tree-root'),error=document.querySelector('#tree-error');
   const svg=(paths)=>{const node=document.createElement('span');node.className='tree-icon';node.setAttribute('aria-hidden','true');node.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';return node;};
-  const icons={file:'<path d="M14 3H6v18h13V8zM14 3v5h5M9 12h6M9 16h6"/>',bib:'<path d="M5 5h12v15H5zM8 2h12v15M8 5v15"/>',image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/>',chevron:'<path d="m9 5 7 7-7 7"/>',more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',newFile:'<path d="M14 2H5v20h14V7zM14 2v5h5M8 14h8M12 10v8"/>',newFolder:'<path d="M3 6V4h7l2 3h9v13H3V6zM12 12v6M9 15h6"/>'};
+  const icons={file:'<path d="M14 3H6v18h13V8zM14 3v5h5M9 12h6M9 16h6"/>',bib:'<path d="M5 5h12v15H5zM8 2h12v15M8 5v15"/>',image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/>',chevron:'<path d="m9 5 7 7-7 7"/>',folder:'<path d="M3 6.5V5h6l2 2.5h10V19H3z"/>',folderOpen:'<path d="M3 19V5h6l2 2.5h8V10M3 19l2.6-8.5H22L19.4 19z"/>',more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',newFile:'<path d="M14 2H5v20h14V7zM14 2v5h5M8 14h8M12 10v8"/>',newFolder:'<path d="M3 6V4h7l2 3h9v13H3V6zM12 12v6M9 15h6"/>'};
   const resizer=document.querySelector('#file-tree-resizer'),heading=document.querySelector('#tree-heading-toggle');
   document.querySelector('#tree-new-file').append(svg(icons.newFile));document.querySelector('#tree-new-folder').append(svg(icons.newFolder));
   heading.querySelector('.tree-heading-chevron').append(svg(icons.chevron));
@@ -65,8 +65,12 @@ export function mountProjectTree({request,context,prepare,lock,open,changed,resi
       const parent=entry.path.split('/').slice(0,-1).join('/'),container=groups.get(parent);if(!container)continue;
       const row=document.createElement('div');row.className='tree-row';row.setAttribute('role','treeitem');row.setAttribute('tabindex','0');row.setAttribute('aria-label',entry.name);row.setAttribute('aria-level',String(entry.path.split('/').length));row.draggable=true;row.dataset.path=entry.path;row.title=entry.path;
       const icon=svg(entry.directory?icons.chevron:/\.bib$/i.test(entry.name)?icons.bib:/\.(png|jpe?g|gif|webp|pdf)$/i.test(entry.name)?icons.image:icons.file);
-      if(entry.directory){icon.classList.add('tree-chevron');if(expanded.has(entry.path))icon.classList.add('tree-chevron-open');}
-      const label=document.createElement('span');label.className='tree-label';label.textContent=entry.name;row.append(icon,label);
+      const label=document.createElement('span');label.className='tree-label';label.textContent=entry.name;
+      if(entry.directory){
+        icon.classList.add('tree-chevron');if(expanded.has(entry.path))icon.classList.add('tree-chevron-open');
+        const folder=svg(expanded.has(entry.path)?icons.folderOpen:icons.folder);folder.classList.add('tree-folder');row.classList.add('tree-directory');
+        row.append(icon,folder,label);
+      }else row.append(icon,label);
       const current=active===snapshot.root+'/'+entry.path;row.classList.toggle('tree-active',highlighted===entry.path);row.setAttribute('aria-selected',String(highlighted===entry.path));if(current)row.setAttribute('aria-current','page');
       row.onclick=async()=>{if(mutation)return;selected=entry.path;if(entry.directory){if(expanded.has(entry.path))expanded.delete(entry.path);else expanded.add(entry.path);try{localStorage.setItem('latex-file-tree-expanded:'+snapshot.root,JSON.stringify([...expanded]));}catch{}render();}else if(entry.editable){closeMenu();if(await open(snapshot.root+'/'+entry.path))render();}else{render();preview(entry);}};
       row.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showMenu(entry,e.clientX,e.clientY);};
