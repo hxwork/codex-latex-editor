@@ -528,3 +528,119 @@ assert.equal(mainBodies[1].annotations[0].request,'Keep notation.');
 assert.equal(deepseekChat.hasAnnotations,false);assert.equal(source,'before chosen after');
 assert.equal(mainButton.hidden,true);
 console.log('PASS: DeepSeek main-chat forwarding, autosave/stale protection, preserved failures and stable retry identity');
+
+
+// One large annotation becomes independently anchored reviews with Unicode offsets.
+doc={};selected=true;
+const oldParagraphs=Array.from({length:7},(_,index)=>`Paragraph ${index} 😀 old text.`);
+const newParagraphs=oldParagraphs.map(text=>text.replace('old text','a longer revised passage'));
+source=oldParagraphs.join('\n\n');const splitBefore=source,splitAfter=newParagraphs.join('\n\n');
+selection={from:{line:0,ch:0},to:{line:0,ch:source.length}};
+let splitSaves=[];
+const splitChat=attachSelectionChat(editor,request,items=>{painted=[...items];},async(after,change)=>{
+  assert.equal(change.before,source);splitSaves.push({after,change});
+});
+chooseColor('');
+splitChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Revise the page';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const parentId=painted[0].id;
+let oldOffset=0;
+const reviewParts=[];
+for(let index=0;index<7;index+=3){
+  const tail=index+3<7?'\n\n':'';
+  const before=oldParagraphs.slice(index,index+3).join('\n\n')+tail;
+  const after=newParagraphs.slice(index,index+3).join('\n\n')+tail;
+  reviewParts.push({old_start:Array.from(splitBefore.slice(0,oldOffset)).length,
+    old_end:Array.from(splitBefore.slice(0,oldOffset+before.length)).length,before,after});
+  oldOffset+=before.length;
+}
+answer={status:'done',reply:'Reviewed.',replacement:null,replacements:[{id:parentId,replacement:splitAfter,reviews:reviewParts}]};
+await el('#annotations-send').onclick();
+assert.equal(painted.length,3);assert(painted.every(item=>item.review));
+assert.equal(new Set(painted.map(item=>item.id)).size,3);assert.equal(source,splitBefore);
+const [splitFirst,splitMiddle,splitLast]=painted;
+await keepReview(splitMiddle);
+assert.equal(painted.length,2);assert(painted.includes(splitFirst)&&painted.includes(splitLast));
+assert.equal(source,oldParagraphs.slice(0,3).join('\n\n')+'\n\n'+newParagraphs.slice(3,6).join('\n\n')+'\n\n'+oldParagraphs[6]);
+undoReview(splitFirst);await keepReview(splitLast);
+assert.equal(painted.length,0);assert.equal(splitSaves.length,2);
+assert.equal(splitSaves[0].change.items[0].selection,reviewParts[1].before);
+assert.equal(splitSaves[1].change.items[0].selection,reviewParts[2].before);
+assert.equal(source,oldParagraphs.slice(0,3).join('\n\n')+'\n\n'+newParagraphs.slice(3).join('\n\n'));
+console.log('PASS: large annotations split into independent reviews; mixed Keep/Undo preserves other chunks, Unicode anchors and per-chunk history');
+
+source='One original paragraph.';const insertionBefore=source;
+selection={from:{line:0,ch:0},to:{line:0,ch:source.length}};
+splitChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Expand the passage';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const insertionId=painted[0].id,insertionTexts=['First three paragraphs.\n\n','Next three paragraphs.\n\n','Last paragraph.'];
+answer={status:'done',reply:'Expanded.',replacement:null,replacements:[{id:insertionId,
+  replacement:insertionTexts.join(''),reviews:insertionTexts.map((after,index)=>({
+    old_start:index?insertionBefore.length:0,old_end:insertionBefore.length,before:index?'':insertionBefore,after}))}]};
+await el('#annotations-send').onclick();
+assert.equal(painted.length,3);
+const [insertionFirst,insertionMiddle,insertionLast]=painted;
+await keepReview(insertionLast);await keepReview(insertionMiddle);await keepReview(insertionFirst);
+assert.equal(source,insertionTexts.join(''),'Accepting added chunks in reverse order preserves their intended order.');
+assert.equal(painted.length,0);
+console.log('PASS: inserted paragraph chunks retain order when accepted backwards, with independent empty-range history');
+
+// Bulk acceptance saves all generated reviews once and leaves unsent comments alone.
+doc={};source='One original paragraph. tail';const bulkBefore=source;
+selection={from:{line:0,ch:0},to:{line:0,ch:insertionBefore.length}};
+let bulkFailure=true,bulkSaves=[],bulkPainted=[];
+const bulkChat=attachSelectionChat(editor,request,items=>{painted=[...items];bulkPainted=painted;},async(after,change)=>{
+  if(bulkFailure)throw new Error('Bulk save failed');
+  assert.equal(change.before,source);bulkSaves.push({after,change});
+});
+chooseColor('');bulkChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Expand this';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const bulkId=painted[0].id;
+answer={status:'done',reply:'Expanded.',replacement:null,replacements:[{id:bulkId,replacement:insertionTexts.join(''),
+  reviews:insertionTexts.map((after,index)=>({old_start:index?insertionBefore.length:0,
+    old_end:insertionBefore.length,before:index?'':insertionBefore,after}))}]};
+await el('#annotations-send').onclick();assert.equal(painted.length,3);
+selection={from:{line:0,ch:insertionBefore.length+1},to:{line:0,ch:source.length}};
+bulkChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Keep this note unsent';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const unsent=painted.find(item=>!item.review),bulkCalls=calls.length,bulkOperations=operations;
+await assert.rejects(()=>bulkChat.keepAll(),/Bulk save failed/);
+assert.equal(source,bulkBefore);assert.equal(painted.filter(item=>item.review).length,3);
+bulkFailure=false;await bulkChat.keepAll();
+assert.equal(source,insertionTexts.join('')+' tail');assert.equal(bulkSaves.length,1);
+assert.equal(bulkSaves[0].change.items.length,3);assert.equal(bulkSaves[0].change.reply,'Expanded.');
+assert.equal(operations,bulkOperations+1);assert.equal(calls.length,bulkCalls,'Bulk Keep must not send another AI request.');
+assert.deepEqual(bulkPainted,[unsent]);assert.equal(unsent.original,'tail');assert.equal(bulkChat.hasAnnotations,true);
+console.log('PASS: bulk Keep, same-anchor insertion order, one save/undo step, failed-save preservation and unsent-comment exclusion');
+
+doc={};source='a'.repeat(101);selection={from:{line:0,ch:0},to:{line:0,ch:101}};
+let largeBulkSaves=[];
+const largeBulkChat=attachSelectionChat(editor,request,items=>{painted=[...items];},async(after,change)=>{
+  assert(change.items.length<=100);assert.equal(change.before,source);largeBulkSaves.push(change);
+});
+chooseColor('');largeBulkChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Revise many pieces';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const largeBulkId=painted[0].id;
+answer={status:'done',reply:'Revised.',replacement:null,replacements:[{id:largeBulkId,replacement:'b'.repeat(101),
+  reviews:Array.from({length:101},(_,index)=>({old_start:index,old_end:index+1,before:'a',after:'b'}))}]};
+await el('#annotations-send').onclick();assert.equal(painted.length,101);
+await largeBulkChat.keepAll();assert.equal(source,'b'.repeat(101));assert.equal(painted.length,0);
+assert.equal(largeBulkSaves.length,2);assert.equal(largeBulkSaves.reduce((sum,change)=>sum+change.items.length,0),101);
+console.log('PASS: one bulk action accepts more than 100 split reviews through bounded history batches');
+
+doc={};source='Old sentence. tail';selection={from:{line:0,ch:0},to:{line:0,ch:13}};
+let undoSaves=0;
+const undoChat=attachSelectionChat(editor,request,items=>{painted=[...items];},async()=>undoSaves++);
+chooseColor('');undoChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Revise this';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+answer={status:'done',reply:'Changed.',replacement:null,replacements:[{id:painted[0].id,replacement:'New sentence.'}]};
+await el('#annotations-send').onclick();assert.equal(painted.filter(item=>item.review).length,1);
+selection={from:{line:0,ch:14},to:{line:0,ch:18}};
+undoChat.openQuick({left:100,top:100});el('#chat-quick-input').value='Keep this note unsent';
+await el('#chat-quick-form').onsubmit({preventDefault(){}});
+const pendingNote=painted.find(item=>!item.review),beforeUndoCalls=calls.length;
+undoChat.undoAll();
+assert.equal(source,'Old sentence. tail');assert.equal(undoSaves,0);assert.equal(calls.length,beforeUndoCalls);
+assert.deepEqual(painted,[pendingNote]);assert.equal(undoChat.hasAnnotations,true);
+console.log('PASS: bulk Undo removes generated suggestions without editing source, saving, model calls or discarding unsent notes');
+
