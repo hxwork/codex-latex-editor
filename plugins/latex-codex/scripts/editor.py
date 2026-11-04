@@ -105,6 +105,7 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 #filename[hidden]{display:none}
 #source-files{display:flex;align-items:center;gap:8px;padding:5px 10px;min-width:0;font-size:12px;color:var(--muted)}#source-file{min-width:0;max-width:100%;padding:3px 0;border:0;border-radius:3px;background:transparent;font-size:12px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#source-file.is-main{font-weight:700}#source-file:hover{color:var(--command)}#project-dialog{width:min(600px,calc(100vw - 32px));border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);padding:20px}#project-dialog::backdrop{background:#0006}#project-dialog label{display:block;padding:10px 0 4px;color:var(--text)}#project-dialog input{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}#project-dialog p{color:var(--muted);line-height:1.6}#project-error{color:#ff6262!important}
 #status,#native-annotation-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#main-file-dialog{width:min(500px,85vw);background:var(--panel);color:var(--text);border-color:var(--border)}#main-file-dialog p{color:var(--muted);font-size:13px;line-height:1.6}#main-file-choice{display:block;width:100%;margin:8px 0 20px}
 #status,.native-annotation-feedback{animation:status-fade 4s ease forwards}
 @keyframes status-fade{0%,75%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){#status,.native-annotation-feedback{animation-timing-function:step-end}}
@@ -113,11 +114,11 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 #pan-mode{display:inline-flex;align-items:center;gap:5px}#pan-mode[aria-pressed=true] .pan-select-icon,#pan-mode[aria-pressed=false] .pan-hand-icon{display:none}
 #pan-hint{font-size:12px;color:var(--muted);white-space:nowrap;animation:pan-hint-fade 2.5s ease forwards}
 @keyframes pan-hint-fade{0%,75%{opacity:1}100%{opacity:0}}
-.compile-group{display:inline-flex;flex-shrink:0}.compile-group #compile{border-radius:999px 0 0 999px;border-right:0}.compile-group #compile-menu-button{display:grid;place-items:center;width:22px;padding:3px 3px;border-radius:0 999px 999px 0;background:#15803d;border-color:#22c55e;border-left-color:#166534;color:#fff}.compile-group #compile-menu-button:hover{background:#166534}.compile-group #compile-menu-button .toolbar-icon{width:14px;height:14px}#compile-menu{width:200px}#compile-menu label{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px;color:var(--text);font-size:13px}#auto-compile{accent-color:#15803d;cursor:pointer}
+.compile-group{display:inline-flex;flex-shrink:0}.compile-group #compile{border-radius:999px 0 0 999px;border-right:0}.compile-group #compile-menu-button{display:grid;place-items:center;width:22px;padding:3px 3px;border-radius:0 999px 999px 0;background:#15803d;border-color:#22c55e;border-left-color:#166534;color:#fff}.compile-group #compile-menu-button:hover{background:#166534}.compile-group #compile-menu-button .toolbar-icon{width:14px;height:14px}#compile-menu{width:300px;max-width:calc(100vw - 24px)}#compile-menu small{display:block;padding:6px;color:var(--muted);line-height:1.5}#compile-menu select{min-width:110px}#compile-menu label{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px;color:var(--text);font-size:13px}#auto-save,#auto-compile{accent-color:#15803d;cursor:pointer}
 #compile{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:110px;padding:3px 10px;font-size:13px;background:#15803d;border-color:#22c55e;color:#fff;font-weight:600}#compile:hover:not(:disabled){background:#166534}#compile[aria-busy=true]{opacity:1;cursor:wait}
 #compile::before{content:'';display:none;width:14px;height:14px;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:compile-spin .8s linear infinite}#compile[aria-busy=true]::before{display:block}.compile-busy,#compile[aria-busy=true] .compile-idle{display:none}#compile[aria-busy=true] .compile-busy{display:inline}
 @keyframes compile-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#compile::before{animation:none}}
-#log-toggle{margin-right:auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:4px}#log-toggle[aria-pressed=true]{background:var(--border);color:var(--command)}.pdf-toolbar[data-log-view=true] :is(#pan-mode,#pan-hint,#zoom-fit){display:none}
+#log-toggle,#open-folder{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;padding:4px}#open-folder{margin-right:auto}#log-toggle[aria-pressed=true]{background:var(--border);color:var(--command)}.pdf-toolbar[data-log-view=true] :is(#pan-mode,#pan-hint,#zoom-fit){display:none}
 .preview-shell{position:relative;flex:1;min-height:0}#preview{position:absolute;inset:0;overflow:auto;background:var(--panel)}
 #preview.hand-tool{cursor:grab;user-select:none}#preview.hand-tool .textLayer{pointer-events:none}#preview.dragging{cursor:grabbing}#preview.zoom-tool{cursor:zoom-in}#preview.zoom-tool.zoom-out{cursor:zoom-out}
 #preview.box-selecting,#preview.box-selecting *{cursor:crosshair!important;user-select:none!important}.pdf-box-frame{position:absolute;z-index:6;pointer-events:none;border:1px solid #2563eb;background:#2563eb15;box-sizing:border-box}.pdf-box-highlight{position:absolute;z-index:5;pointer-events:none;background:#2563eb40;mix-blend-mode:multiply}
@@ -169,6 +170,11 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 <div id="file-menu" class="toolbar-menu" popover="auto" aria-label="文件" data-i18n-aria-label="文件"><button id="open" data-i18n="打开文件">打开文件</button><button id="project-open" data-i18n="项目设置">项目设置</button><button id="reload" data-i18n="重新读取文件">重新读取文件</button><a href="/pdf" download="document.pdf" data-i18n="下载 PDF">下载 PDF</a></div>
 <dialog id="git-dialog" aria-labelledby="git-title" style="width:min(960px,90vw);max-height:90vh;overflow:auto"><h3 id="git-title" data-i18n="同步到 Overleaf">同步到 Overleaf</h3><p id="git-summary"></p><pre id="git-files" style="max-height:180px;overflow:auto;white-space:pre-wrap"></pre><p id="git-excluded"></p><form id="git-form"><label for="git-message" data-i18n="提交说明">提交说明</label><input id="git-message" required maxlength="2000" value="Update paper" style="width:100%;box-sizing:border-box"><p data-i18n="自动获取远程更新、合并并推送；遇到冲突会先分析。">自动获取远程更新、合并并推送；遇到冲突会先分析。</p><p id="git-progress" role="status" aria-live="polite"></p><div id="git-conflicts"></div><p id="git-error" role="alert"></p><button id="git-discard" type="button" hidden>放弃本次合并，重新检查</button><div class="history-dialog-actions"><button id="git-cancel" type="button" data-i18n="取消">取消</button><button id="git-submit" type="submit" data-i18n="同步到 Overleaf">同步到 Overleaf</button></div></form></dialog>
 <dialog id="project-dialog" aria-labelledby="project-title"><h3 id="project-title" data-i18n="项目设置">项目设置</h3><form id="project-form"><label for="project-root" data-i18n="项目根目录">项目根目录</label><input id="project-root" required><label for="project-entry" data-i18n="主编译文件">主编译文件</label><input id="project-entry" required placeholder="main.tex"><p data-i18n="选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。">选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。</p><p id="project-error" role="alert"></p><div class="history-dialog-actions"><button id="project-cancel" type="button" data-i18n="取消">取消</button><button id="project-apply" type="submit" data-i18n="应用">应用</button></div></form></dialog>
+<dialog id="main-file-dialog" class="history-small-dialog" aria-labelledby="main-file-title">
+<form method="dialog"><h3 id="main-file-title" data-i18n="选择主编译文件">选择主编译文件</h3>
+<p data-i18n="当前文件被多个主文件引用，请选择本次编译使用的主文件。">当前文件被多个主文件引用，请选择本次编译使用的主文件。</p>
+<label for="main-file-choice" data-i18n="主编译文件">主编译文件</label><select id="main-file-choice"></select>
+<div class="history-dialog-actions"><button value="cancel" autofocus data-i18n="取消">取消</button><button value="open" data-i18n="打开">打开</button></div></form></dialog>
 <div id="settings-menu" class="toolbar-menu" popover="auto" aria-label="设置" data-i18n-aria-label="设置"><label for="language"><span data-i18n="语言">语言</span><select id="language" aria-label="语言" data-i18n-aria-label="语言"><option value="system" data-i18n="跟随系统">跟随系统</option><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="ja">日本語</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option></select></label><small id="language-help" data-i18n="跟随系统语言；无法识别时使用英文。可在齿轮设置中手动切换。">跟随系统语言；无法识别时使用英文。可在齿轮设置中手动切换。</small><label for="editor-mode"><span data-i18n="编辑模式">编辑模式</span><select id="editor-mode" aria-label="编辑模式" data-i18n-aria-label="编辑模式"><option value="default" data-i18n="普通编辑">普通编辑</option><option value="vim">Vim</option><option value="emacs">Emacs</option></select></label><label for="source-font-size"><span data-i18n="源码字号">源码字号</span><input id="source-font-size" type="number" min="10" max="32" step="1" value="14" aria-label="源码字号" data-i18n-aria-label="源码字号"><span>px</span></label><label for="pdf-box-auto-comment" class="checkbox-setting"><input id="pdf-box-auto-comment" type="checkbox"><span data-i18n="框选后自动弹出 PDF 批注对话框（无需右键）">框选后自动弹出 PDF 批注对话框（无需右键）</span></label><div class="proofread-settings" role="group" aria-label="Proofread"><label for="proofread-editor" class="checkbox-setting"><input id="proofread-editor" type="checkbox" checked><span data-i18n="编辑器校对（Proofread）">编辑器校对（Proofread）</span></label><label for="proofread-pdf" class="checkbox-setting"><input id="proofread-pdf" type="checkbox" checked><span data-i18n="PDF 校对（Proofread）">PDF 校对（Proofread）</span></label></div><label for="proofread-project" class="checkbox-setting"><input id="proofread-project" type="checkbox"><span data-i18n="项目修改校对（主对话 / 外部修改）">项目修改校对（主对话 / 外部修改）</span></label><small data-i18n="记录项目 TeX 修改，逐处 Keep / Undo；手动输入照常保存。">记录项目 TeX 修改，逐处 Keep / Undo；手动输入照常保存。</small><small data-i18n="都关闭时，Send 直接应用新修改；已有建议仍可在批注列表确认。">都关闭时，Send 直接应用新修改；已有建议仍可在批注列表确认。</small><label for="outline-style"><span data-i18n="章节目录样式">章节目录样式</span><select id="outline-style" aria-label="章节目录样式" data-i18n-aria-label="章节目录样式"><option value="wheel" data-i18n="轮盘">轮盘</option><option value="cards" data-i18n="章节卡片 + 小节轮盘">章节卡片 + 小节轮盘</option><option value="timeline" data-i18n="章节时间线">章节时间线</option></select></label><div class="theme-setting"><div class="theme-setting-heading"><label for="theme" data-i18n="配色">配色</label><button id="theme-customize" class="icon-button" aria-label="截图生成主题" data-i18n-aria-label="截图生成主题" title="截图生成主题" data-i18n-title="截图生成主题"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></div><select id="theme" aria-label="配色" data-i18n-aria-label="配色"><optgroup label="浅色" data-i18n-label="浅色"><option value="overleaf" data-i18n="Overleaf · 白底">Overleaf · 白底</option><option value="eclipse" data-i18n="Eclipse · 白底">Eclipse · 白底</option><option value="idea" data-i18n="IDEA · 白底">IDEA · 白底</option><option value="neo" data-i18n="Neo · 简洁白">Neo · 简洁白</option><option value="base16-light" data-i18n="Base16 · 浅灰">Base16 · 浅灰</option><option value="solarized-light" data-i18n="Solarized · 暖白">Solarized · 暖白</option></optgroup><optgroup label="深色" data-i18n-label="深色"><option value="cobalt" data-i18n="Cobalt · 深蓝">Cobalt · 深蓝</option><option value="dracula" data-i18n="Dracula · 紫灰">Dracula · 紫灰</option><option value="monokai" data-i18n="Monokai · 炭黑">Monokai · 炭黑</option><option value="nord" data-i18n="Nord · 冷灰">Nord · 冷灰</option><option value="material-darker" data-i18n="Material · 深灰">Material · 深灰</option><option value="material-palenight" data-i18n="Palenight · 蓝紫">Palenight · 蓝紫</option><option value="ayu-dark" data-i18n="Ayu · 深夜">Ayu · 深夜</option><option value="gruvbox-dark" data-i18n="Gruvbox · 暖黑">Gruvbox · 暖黑</option><option value="solarized-dark" data-i18n="Solarized · 深青">Solarized · 深青</option></optgroup></select></div><label for="chat-color"><span data-i18n="修改标记颜色">修改标记颜色</span><select id="chat-color" aria-label="修改标记颜色" data-i18n-aria-label="修改标记颜色"><option value="" data-i18n="无">无</option><option value="blue" data-i18n="蓝色">蓝色</option><option value="red" data-i18n="红色">红色</option><option value="teal" data-i18n="青色">青色</option><option value="magenta" data-i18n="洋红">洋红</option><option value="orange" data-i18n="橙色">橙色</option><option value="violet" data-i18n="紫色">紫色</option></select></label><label for="revision-color"><span data-i18n="当前用户修订色">当前用户修订色</span><select id="revision-color" aria-label="当前用户修订色" data-i18n-aria-label="当前用户修订色"><option value="orange" data-i18n="橙色">橙色</option><option value="blue" data-i18n="蓝色">蓝色</option><option value="purple" data-i18n="紫色">紫色</option><option value="green" data-i18n="绿色">绿色</option><option value="red" data-i18n="红色">红色</option></select></label><button id="settings-save" data-i18n="保存设置">保存设置</button><small id="settings-save-status" role="status" data-i18n="设置更改会自动保存，并在下次打开时恢复。">设置更改会自动保存，并在下次打开时恢复。</small><button id="chat-view" aria-controls="chat-panel" data-i18n="查看对话">查看对话</button><details id="chat-context-settings"><summary data-i18n="上下文记录">上下文记录</summary><pre id="chat-selection"></pre><button id="chat-use-selection" data-i18n="使用当前选区">使用当前选区</button><small id="chat-context" data-i18n="携带论文全文；正在读取主对话…">携带论文全文；正在读取主对话…</small></details></div>
 <dialog id="theme-dialog" aria-labelledby="theme-dialog-title">
 <div class="theme-dialog-heading"><strong id="theme-dialog-title" data-i18n="截图生成主题">截图生成主题</strong><button id="theme-close" aria-label="关闭" data-i18n-aria-label="关闭">×</button></div>
@@ -187,7 +193,7 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 </div><div class="theme-dialog-actions"><button id="theme-save" disabled data-i18n="保存并使用">保存并使用</button></div></dialog>
 <div id="workspace"><aside id="file-tree-panel" hidden aria-label="项目文件树"><div class="file-tree-heading"><button id="tree-heading-toggle" aria-label="折叠文件树内容" aria-expanded="true" aria-controls="tree-root"><span class="tree-heading-chevron" aria-hidden="true"></span><strong>文件树</strong></button><div class="file-tree-tools"><button id="tree-new-file" aria-label="新建文件" title="新建文件"></button><button id="tree-new-folder" aria-label="新建文件夹" title="新建文件夹"></button></div></div><button id="tree-restore" hidden>恢复删除</button><p id="tree-error" role="status"></p><div id="tree-root" role="tree" aria-label="项目文件"></div></aside><div id="file-tree-resizer" hidden role="separator" tabindex="0" aria-label="调整文件树宽度" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="520" aria-valuenow="240" title="拖动调整文件树宽度 · 双击恢复默认"></div><main><section><div id="source-files"><button id="source-file" disabled aria-label="项目源码" data-i18n-aria-label="项目源码" aria-expanded="false" aria-controls="source-file-wheel"></button><div id="source-file-wheel" popover="auto"></div></div><label id="filename" hidden for="source" data-i18n="LaTeX 源码">LaTeX 源码</label><textarea id="source" spellcheck="false" disabled aria-label="LaTeX 源码" data-i18n-aria-label="LaTeX 源码"></textarea><div id="proofread-bulk-actions"><button id="proofread-keep-all" type="button" class="proofread-navigation" aria-controls="source" hidden disabled aria-busy="false" title="接受当前文件的全部待确认校对修改" data-i18n-title="接受当前文件的全部待确认校对修改" data-i18n="全部接受">全部接受</button><button id="proofread-undo-all" type="button" class="proofread-navigation" aria-controls="source" hidden disabled aria-busy="false" title="撤销当前文件的全部待确认校对修改" data-i18n-title="撤销当前文件的全部待确认校对修改" data-i18n="全部 Undo">全部 Undo</button></div><button id="proofread-previous" class="proofread-navigation proofread-previous" type="button" hidden aria-controls="source"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span></span></button><button id="proofread-next" class="proofread-navigation proofread-next" type="button" hidden aria-controls="source"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg><span></span></button></section>
 <div class="sync-rail"><div id="splitter" role="separator" tabindex="0" aria-label="调整 LaTeX 和 PDF 宽度" data-i18n-aria-label="调整 LaTeX 和 PDF 宽度" aria-orientation="vertical" aria-valuemin="15" aria-valuemax="85" aria-valuenow="50" title="拖动调整宽度 · 双击恢复各半" data-i18n-title="拖动调整宽度 · 双击恢复各半"></div><button id="forward" disabled aria-label="定位光标到 PDF" data-i18n-aria-label="定位光标到 PDF" title="跳到光标对应的 PDF 位置" data-i18n-title="跳到光标对应的 PDF 位置">→</button></div>
-<section><div class="pdf-toolbar"><div class="compile-group"><button id="compile" aria-busy="false" disabled><span class="compile-idle" data-i18n="保存并编译">保存并编译</span><span class="compile-busy" data-i18n="正在编译…">正在编译…</span></button><button id="compile-menu-button" popovertarget="compile-menu" aria-label="编译选项" data-i18n-aria-label="编译选项" title="编译选项" data-i18n-title="编译选项" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></button></div><div id="compile-menu" class="toolbar-menu" popover="auto" aria-label="编译选项" data-i18n-aria-label="编译选项"><label for="auto-compile"><span data-i18n="自动编译">自动编译</span><input id="auto-compile" type="checkbox" checked aria-label="自动编译" data-i18n-aria-label="自动编译"></label></div><button id="markdown-pdf-toggle" hidden aria-pressed="false" data-i18n="PDF 预览">PDF 预览</button><button id="log-toggle" aria-label="编译日志" data-i18n-aria-label="编译日志" title="编译日志" data-i18n-title="编译日志" aria-pressed="false" aria-controls="log"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2H5v20h14V7zM14 2v6h5M8 12h8M8 16h8"/></svg></button><span id="pan-hint" role="status" hidden data-i18n="空格拖动 · Alt + 空格缩放">空格拖动 · Alt + 空格缩放</span><button id="pan-mode" aria-pressed="true" title="切换拖动页面与选择文字" data-i18n-title="切换拖动页面与选择文字" ><svg class="toolbar-icon pan-hand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 11V7a2 2 0 0 0-4 0v3M14 10V5a2 2 0 0 0-4 0v6M10 10.5V7a2 2 0 0 0-4 0v5l-1-1a2 2 0 0 0-3 2l4 6a6 6 0 0 0 5 3h3a6 6 0 0 0 6-6v-3a2 2 0 0 0-4 0v1"/></svg><svg class="toolbar-icon pan-select-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4 3 15 10-7 1-4 7Z"/></svg><span id="pan-label" data-i18n="拖动">拖动</span></button><button id="zoom-fit" aria-label="PDF 缩放" aria-expanded="false" aria-controls="pdf-zoom-dial">100%</button><div id="pdf-zoom-dial" popover="manual" role="slider" tabindex="0" aria-label="PDF 缩放" aria-orientation="horizontal" aria-valuemin="30" aria-valuemax="500" aria-valuenow="100" aria-controls="preview"><div class="pdf-zoom-face"><svg class="pdf-zoom-arc" viewBox="0 0 240 240" aria-hidden="true"><path d="M 50 0 A 190 190 0 0 0 240 190"/></svg><div class="pdf-zoom-rotor" aria-hidden="true"></div><span class="pdf-zoom-indicator" aria-hidden="true"></span></div></div></div><div class="preview-shell"><div id="preview" class="hand-tool" role="region" aria-label="编译后的 PDF" data-i18n-aria-label="编译后的 PDF" tabindex="0"><div id="pdf-viewer" class="pdfViewer"></div></div><div id="markdown-preview" hidden role="region" aria-label="Markdown 预览" data-i18n-aria-label="Markdown 预览" tabindex="0"></div><nav id="pdf-outline" aria-label="章节目录" data-i18n-aria-label="章节目录" hidden></nav><button id="pdf-proofread-previous" class="proofread-navigation proofread-previous" type="button" hidden aria-controls="preview"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span></span></button><button id="pdf-proofread-next" class="proofread-navigation proofread-next" type="button" hidden aria-controls="preview"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg><span></span></button><pre id="log" hidden tabindex="0" role="region" aria-label="编译日志" data-i18n-aria-label="编译日志"></pre></div></section></main></div>
+<section><div class="pdf-toolbar"><div class="compile-group"><button id="compile" aria-busy="false" disabled><span class="compile-idle" data-i18n="保存并编译">保存并编译</span><span class="compile-busy" data-i18n="正在编译…">正在编译…</span></button><button id="compile-menu-button" popovertarget="compile-menu" aria-label="编译选项" data-i18n-aria-label="编译选项" title="编译选项" data-i18n-title="编译选项" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></button></div><div id="compile-menu" class="toolbar-menu" popover="auto" aria-label="编译选项" data-i18n-aria-label="编译选项"><label for="auto-save"><span data-i18n="自动保存">自动保存</span><input id="auto-save" type="checkbox" aria-label="自动保存" data-i18n-aria-label="自动保存"></label><label for="auto-compile"><span data-i18n="自动编译">自动编译</span><input id="auto-compile" type="checkbox" checked disabled aria-label="自动编译" data-i18n-aria-label="自动编译" aria-describedby="auto-save-help"></label><small id="auto-save-help" data-i18n="自动编译需先开启自动保存。">自动编译需先开启自动保存。</small><label for="tex-engine"><span data-i18n="编译引擎">编译引擎</span><select id="tex-engine"><option value="auto" data-i18n="自动识别">自动识别</option><option value="pdflatex">pdfLaTeX</option><option value="xelatex">XeLaTeX</option></select></label></div><button id="markdown-pdf-toggle" hidden aria-pressed="false" data-i18n="PDF 预览">PDF 预览</button><button id="log-toggle" aria-label="编译日志" data-i18n-aria-label="编译日志" title="编译日志" data-i18n-title="编译日志" aria-pressed="false" aria-controls="log"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2H5v20h14V7zM14 2v6h5M8 12h8M8 16h8"/></svg></button><button id="open-folder" type="button" disabled aria-label="打开当前文件夹" data-i18n-aria-label="打开当前文件夹" title="打开当前文件夹" data-i18n-title="打开当前文件夹"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm0 0h18"/></svg></button><span id="pan-hint" role="status" hidden data-i18n="空格拖动 · Alt + 空格缩放">空格拖动 · Alt + 空格缩放</span><button id="pan-mode" aria-pressed="false" title="切换拖动页面与选择文字" data-i18n-title="切换拖动页面与选择文字" ><svg class="toolbar-icon pan-hand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 11V7a2 2 0 0 0-4 0v3M14 10V5a2 2 0 0 0-4 0v6M10 10.5V7a2 2 0 0 0-4 0v5l-1-1a2 2 0 0 0-3 2l4 6a6 6 0 0 0 5 3h3a6 6 0 0 0 6-6v-3a2 2 0 0 0-4 0v1"/></svg><svg class="toolbar-icon pan-select-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4 3 15 10-7 1-4 7Z"/></svg><span id="pan-label" data-i18n="选字">选字</span></button><button id="zoom-fit" aria-label="PDF 缩放" aria-expanded="false" aria-controls="pdf-zoom-dial">100%</button><div id="pdf-zoom-dial" popover="manual" role="slider" tabindex="0" aria-label="PDF 缩放" aria-orientation="horizontal" aria-valuemin="30" aria-valuemax="500" aria-valuenow="100" aria-controls="preview"><div class="pdf-zoom-face"><svg class="pdf-zoom-arc" viewBox="0 0 240 240" aria-hidden="true"><path d="M 50 0 A 190 190 0 0 0 240 190"/></svg><div class="pdf-zoom-rotor" aria-hidden="true"></div><span class="pdf-zoom-indicator" aria-hidden="true"></span></div></div></div><div class="preview-shell"><div id="preview" role="region" aria-label="编译后的 PDF" data-i18n-aria-label="编译后的 PDF" tabindex="0"><div id="pdf-viewer" class="pdfViewer"></div></div><div id="markdown-preview" hidden role="region" aria-label="Markdown 预览" data-i18n-aria-label="Markdown 预览" tabindex="0"></div><nav id="pdf-outline" aria-label="章节目录" data-i18n-aria-label="章节目录" hidden></nav><button id="pdf-proofread-previous" class="proofread-navigation proofread-previous" type="button" hidden aria-controls="preview"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span></span></button><button id="pdf-proofread-next" class="proofread-navigation proofread-next" type="button" hidden aria-controls="preview"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg><span></span></button><pre id="log" hidden tabindex="0" role="region" aria-label="编译日志" data-i18n-aria-label="编译日志"></pre></div></section></main></div>
 <aside id="chat-panel" role="dialog" aria-label="项目侧边聊天" data-i18n-aria-label="项目侧边聊天" hidden>
 <div class="chat-bar"><strong data-i18n="Copilot · 项目对话">Copilot · 项目对话</strong><button id="chat-end" data-i18n="新对话">新对话</button><button id="chat-close" aria-label="收起项目对话" data-i18n-aria-label="收起项目对话">×</button></div>
 <div id="chat-messages" role="log" aria-label="对话记录" data-i18n-aria-label="对话记录" aria-live="polite"></div>
@@ -261,7 +267,7 @@ const pdfViewer=new PDFViewer({container:preview,viewer:document.querySelector('
 pdfLinks.setViewer(pdfViewer);
 const pdfOutline=attachPdfOutline({container:document.querySelector('#pdf-outline'),preview,viewer:pdfViewer,eventBus:pdfEvents,t,style:document.querySelector('#outline-style').value});
 window.addEventListener('latex-outline-change',()=>pdfOutline.setStyle(document.querySelector('#outline-style').value));
-let pdfTask=null,pdfBuild='',panMode=true,panHintTimer;
+let pdfTask=null,pdfBuild='',panMode=false,panHintTimer;
 document.querySelector('#pan-mode').onclick=()=>{
   endSpacePan();pdfBoxSelection.clear();panMode=!panMode;preview.classList.toggle('hand-tool',panMode);
   const button=document.querySelector('#pan-mode');setText(document.querySelector('#pan-label'),panMode?'拖动':'选字');button.setAttribute('aria-pressed',String(panMode));
@@ -575,22 +581,36 @@ const projectTree=mountProjectTree({request,
   },
   lock:value=>{clearTimeout(timer);busy=value;editor.setOption('readOnly',value?'nocursor':false);updateSyncControls();},
   open:switchSource,
-  changed:async data=>{display(data.state);await clearPreview();if(autoCompile.checked)await compile();},
+  changed:async data=>{display(data.state);await clearPreview();if(automaticCompilation())await compile();},
   resize:()=>{editor.refresh();}
 });
-const autoCompile=document.querySelector('#auto-compile');
-autoCompile.checked=true;
-try{autoCompile.checked=preferences.getItem('latex-codex-auto-compile')!=='off';}catch(e){}
+const autoSave=document.querySelector('#auto-save'),autoCompile=document.querySelector('#auto-compile');
+autoSave.checked=false;autoCompile.checked=true;
+try{autoSave.checked=preferences.getItem('latex-codex-auto-save')==='on';autoCompile.checked=preferences.getItem('latex-codex-auto-compile')!=='off';}catch(e){}
+function automaticCompilation(){return autoSave.checked&&autoCompile.checked;}
 function updateCompileCaption(){
   const label=document.querySelector('#filename');
+  autoCompile.disabled=!autoSave.checked;
+  if(!autoSave.checked){if(label.dataset.name)setText(label,markdownLive()?'{name} · 手动保存与实时预览':'{name} · 手动保存与编译',{name:label.dataset.name});return;}
   if(markdownLive()){if(label.dataset.name)setText(label,'{name} · 自动保存与实时预览',{name:label.dataset.name});return;}
   if(label.dataset.name)setText(label,autoCompile.checked?'{name} · 停止输入 0.8 秒后自动保存并编译':'{name} · 自动保存，手动编译',{name:label.dataset.name});
 }
-function scheduleSave(){clearTimeout(timer);timer=setTimeout(()=>compile(autoCompile.checked),800);}
-autoCompile.onchange=()=>{
-  try{preferences.setItem('latex-codex-auto-compile',autoCompile.checked?'on':'off');}catch(e){}
+function scheduleSave(){clearTimeout(timer);if(autoSave.checked)timer=setTimeout(()=>{if(autoSave.checked)return compile(autoCompile.checked);},800);}
+autoSave.onchange=autoCompile.onchange=()=>{
+  try{preferences.setItem('latex-codex-auto-save',autoSave.checked?'on':'off');preferences.setItem('latex-codex-auto-compile',autoCompile.checked?'on':'off');}catch(e){}
   clearTimeout(timer);updateCompileCaption();
-  if(!conflict&&(editor.getValue()!==saved||(autoCompile.checked&&pdfVersion!==version)))scheduleSave();
+  if(!conflict&&(editor.getValue()!==saved||(automaticCompilation()&&pdfVersion!==version)))scheduleSave();
+};
+const texEngine=document.querySelector('#tex-engine');
+texEngine.value='auto';
+texEngine.onchange=()=>{pdfVersion='';return compile();};
+document.querySelector('#open-folder').onclick=async()=>{
+  const button=document.querySelector('#open-folder');
+  if(button.disabled)return;
+  button.disabled=true;
+  try{await request('/open-folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:document.querySelector('#filename').title})});}
+  catch(e){setText(status,'打开失败：{message}',{message:e.message});}
+  finally{button.disabled=false;}
 };
 let errorLine=null;
 function showCompileError(error){
@@ -604,7 +624,7 @@ function showCompileError(error){
   // Diagnostics highlight the active source without interrupting editing or navigation.
   setText(status,'编译失败 · 第 {line} 行：{message}',error);
 }
-function updateSyncControls(){updateAcceptAll();const disabled=busy||syncBusy||editor.getOption('readOnly');forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;}
+function updateSyncControls(){updateAcceptAll();const disabled=busy||syncBusy||editor.getOption('readOnly');texEngine.disabled=!!disabled||documentType==='markdown';forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;}
 proofreadPdf=attachProofreadPdf({request,
   capture:()=>({latex:documentType==='latex',enabled:preferences.getItem('latex-codex-proofread-pdf')!=='off',path:document.querySelector('#filename').title,version,source:editor.getValue(),doc:editor.getDoc(),range:(from,to)=>editor.getRange(from,to),index:pos=>editor.indexFromPos(pos)}),
   display:async(data,current)=>{const displayed=await refreshPreview(data,current);if(displayed!==false&&current()){pdfVersion='';compiledLabels={};compiledCitations={};showCompileLog(false);updateSyncControls();selectionChat.refreshAnnotations();}return displayed;},
@@ -633,7 +653,7 @@ async function saveAnnotationChange(source,change){
     version=data.version;saved=source;
     if(pdfVersion!==version){pdfVersion='';compiledLabels={};compiledCitations={};}
     setText(status,'批注与修改已保存到历史。');
-    if(autoCompile.checked&&pdfVersion!==version)scheduleSave();
+    if(automaticCompilation()&&pdfVersion!==version)scheduleSave();
   }catch(e){
     if(e.conflict||!e.status||e.status>=500){conflict=true;setText(status,e.conflict?'文件已被外部修改，请先重新读取':'保存状态待确认，请重新读取');}
     else if(editor.getValue()!==saved)scheduleSave();
@@ -663,6 +683,8 @@ function display(data,preservePdf=false){
   saved=text;version=data.version;pdfVersion=preservePdf&&data.sync&&data.pdf_revision===pdfBuild?version:'';compiledLabels=pdfVersion?data.labels||{}:{};compiledCitations=pdfVersion?data.citations||{}:{};editor.setOption('readOnly',false);conflict=false;updateSyncControls();
   const label=document.querySelector('#filename');label.dataset.name=data.name;label.title=data.path;updateCompileCaption();
   projectRoot=data.project_root||'';mainFile=data.main_file||data.path;projectVersion=data.project_version||'';
+  texEngine.value=['auto','pdflatex','xelatex'].includes(data.engine_choice)?data.engine_choice:'auto';
+  document.querySelector('#open-folder').disabled=false;
   updateSourcePicker(data);
   projectTree.refresh();
   configurePreview();
@@ -684,15 +706,30 @@ document.querySelector('#markdown-pdf-toggle').onclick=async()=>{
   pdfZoomControl.close();showCompileLog(false);markdownPdf=!markdownPdf;pendingForward=false;configurePreview();
   if(markdownPdf)await compile();else{markdownPreview.render(editor.getValue());setText(status,'已切换到实时预览');}
 };
+async function sourceRequest(route,payload){
+  const data=await request(route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(!data.main_candidates)return data;
+  const dialog=document.querySelector('#main-file-dialog'),select=document.querySelector('#main-file-choice');
+  select.replaceChildren(...data.main_candidates.map(file=>{const option=document.createElement('option');option.value=file.path;option.textContent=file.name;return option;}));
+  dialog.returnValue='';
+  await new Promise(resolve=>{dialog.addEventListener('close',resolve,{once:true});dialog.showModal();});
+  if(dialog.returnValue!=='open')return {cancelled:true};
+  return sourceRequest(route,{...payload,path:data.path,main_file:select.value});
+}
 async function switchSource(path,initialize=true){
   if(path===document.querySelector('#filename').title)return true;
   if(busy||conflict||selectionChat.busy||selectionChat.hasAnnotations){setText(status,'请先保存修改、处理冲突，并发送或删除批注，再切换源码。');return false;}
   if(editor.getValue()!==saved)await compile(false);
   if(conflict||editor.getValue()!==saved)return false;
-  clearTimeout(timer);busy=true;editor.setOption('readOnly','nocursor');updateSyncControls();
-  try{const data=await request('/source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,version})});display(data,true);return true;}
+  clearTimeout(timer);busy=true;editor.setOption('readOnly','nocursor');updateSyncControls();let switched=false,sameMain=true;
+  try{
+    const data=await sourceRequest('/source',{path,version});
+    if(data.cancelled){setText(status,'已取消打开');return false;}
+    sameMain=(data.main_file||mainFile)===mainFile&&(data.project_root||projectRoot)===projectRoot;
+    display(data,sameMain);if(!sameMain)await clearPreview();switched=true;return true;
+  }
   catch(e){setText(status,'打开失败：{message}',{message:e.message});return false;}
-  finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();if(initialize&&autoCompile.checked&&!pdfVersion&&!conflict)await compile();}
+  finally{busy=false;editor.setOption('readOnly',false);updateSyncControls();if(switched&&initialize&&!pdfVersion&&!conflict&&(automaticCompilation()||!sameMain))await compile();}
 }
 document.querySelector('#project-open').onclick=()=>{document.querySelector('#file-menu').hidePopover();document.querySelector('#project-root').value=projectRoot;document.querySelector('#project-entry').value=mainFile;document.querySelector('#project-error').textContent='';projectDialog.showModal();};
 document.querySelector('#project-cancel').onclick=()=>projectDialog.close();
@@ -811,7 +848,7 @@ async function openFile(){
   clearTimeout(timer);busy=true;editor.setOption('readOnly','nocursor');updateSyncControls();let opened=false;
   setText(status,'请在系统窗口中选择 .tex 或 .md 文件…');
   try{
-    const data=await request('/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const data=await sourceRequest('/open',{});
     if(data.cancelled)setText(status,'已取消打开');
     else{const sameProject=data.project_root===projectRoot&&data.main_file===mainFile;display(data,sameProject);if(!sameProject)await clearPreview();opened=true;}
   }catch(e){setText(status,'打开失败：{message}',{message:e.message});}
@@ -824,7 +861,7 @@ async function compile(compilePdf=true){
   clearTimeout(timer);if(busy||conflict||editor.getOption('readOnly'))return;
   busy=true;compileButton.setAttribute('aria-busy',String(compilePdf));updateSyncControls();const text=editor.getValue(),changed=text!==saved;setText(status,compilePdf?'正在保存并编译…':'正在保存…');
   try{
-    const data=await request(compilePdf?'/compile':'/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:text,version,...(markdownPdf?{preview:'pdf'}:{})})});
+    const data=await request(compilePdf?'/compile':'/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:text,version,...(compilePdf?{engine_choice:texEngine.value}:{}),...(markdownPdf?{preview:'pdf'}:{})})});
     version=data.version;saved=text;if(data.project_version)projectVersion=data.project_version;
     if(!compilePdf){
       if(pdfVersion!==version){pdfVersion='';compiledLabels={};compiledCitations={};}
@@ -837,13 +874,14 @@ async function compile(compilePdf=true){
     // TeX may report a child-source error at its parent's input line. Never switch
     // the editor to that diagnostic: keep the file and draft the user is fixing.
     showCompileError(!data.ok&&editor.getValue()===text?data.diagnostic:null);
+    if(!data.ok&&data.missing_package)setText(status,'缺少 {name}，请补齐宏包后重新编译。',{name:data.missing_package});
     if(data.ok){
       normalPdfData=data;proofreadPdf.invalidate();
       try{await refreshPreview(data);pdfVersion=data.sync?data.version:'';compiledLabels=data.labels||{};compiledCitations=data.citations||{};}
       catch(e){setText(status,'已保存 · 编译成功，PDF 预览加载失败');log.textContent+='\n'+e.message;showCompileLog(true);}
     }
   }catch(e){conflict=true;setText(status,e.conflict?'文件已被外部修改，请先重新读取':'保存状态待确认，请重新读取');log.textContent=e.message;showCompileLog(true);}
-  finally{busy=false;compileButton.setAttribute('aria-busy','false');updateSyncControls();if(!conflict&&(editor.getValue()!==text||(!markdownLive()&&!compilePdf&&autoCompile.checked&&pdfVersion!==version)))scheduleSave();else if(!markdownLive()&&!conflict&&pendingForward&&!compilePdf){pendingForward=false;synchronize('forward');}else if(!markdownLive()&&!conflict&&pdfVersion&&(pendingForward||(compilePdf&&changed))){const quiet=!pendingForward;pendingForward=false;synchronize('forward',undefined,quiet);}}
+  finally{busy=false;compileButton.setAttribute('aria-busy','false');updateSyncControls();if(!conflict&&(editor.getValue()!==text||(!markdownLive()&&!compilePdf&&automaticCompilation()&&pdfVersion!==version)))scheduleSave();else if(!markdownLive()&&!conflict&&pendingForward&&!compilePdf){pendingForward=false;synchronize('forward');}else if(!markdownLive()&&!conflict&&pdfVersion&&(pendingForward||(compilePdf&&changed))){const quiet=!pendingForward;pendingForward=false;synchronize('forward',undefined,quiet);}}
   selectionChat.refreshAnnotations();
 }
 async function restoreHistory(data){
@@ -915,16 +953,17 @@ async function load(force=false){
     const data=await request('/state');
     if(busy||syncBusy||historyDialog.open)return;
     mainSource=data.main_source||'';mathHover.setMainSource(mainSource);
+    if(data.path===document.querySelector('#filename').title&&data.project_root===projectRoot&&data.main_file===mainFile)updateSourcePicker(data);
     if(!force&&version&&data.version===version){
-      if(data.project_version&&data.project_version!==projectVersion){projectVersion=data.project_version;pdfVersion='';compiledLabels={};compiledCitations={};if(autoCompile.checked)await compile();else setText(status,'项目文件已变化，请重新编译后定位。');}
+      if(data.project_version&&data.project_version!==projectVersion){projectVersion=data.project_version;pdfVersion='';compiledLabels={};compiledCitations={};if(automaticCompilation())await compile();else setText(status,'项目文件已变化，请重新编译后定位。');}
       return;
     }
     if(!force&&version&&data.path===document.querySelector('#filename').title&&editor.getValue()===saved&&preferences.getItem('latex-codex-proofread-project')==='on'){
-      await adoptProjectSource(data);await projectReview.refresh();if(autoCompile.checked)await compile();return;
+      await adoptProjectSource(data);await projectReview.refresh();if(automaticCompilation())await compile();return;
     }
     if(!force&&version&&(editor.getValue()!==saved||selectionChat.hasAnnotations)){conflict=true;setText(status,'文件已被外部修改；保留了编辑框内容，请先处理冲突');return;}
     const firstLoad=!version;display(data);
-    await compile(firstLoad||force||autoCompile.checked);
+    if(firstLoad||force||automaticCompilation())await compile(true);
   }catch(e){setText(status,'读取失败：{message}',{message:e.message});}
   finally{loading=false;}
 }
@@ -1676,7 +1715,7 @@ preview.onpointerup=preview.onpointercancel=preview.onlostpointercapture=e=>{
   finishPdfDrag();
 };
 preview.ondblclick=e=>{
-  if((!panMode&&!spacePan)||altZoom||pdfDragged)return;const element=e.target.closest('.page');if(!element)return;
+  if(preview.inert||e.button!==0||altZoom||pdfDragged||e.target.closest('a,input,textarea,select,button,[contenteditable]'))return;const element=e.target.closest('.page');if(!element)return;
   if(spacePan)spaceLocked=true;
   synchronize('backward',pdfPoint(element,e.clientX,e.clientY));
 };
@@ -1891,6 +1930,78 @@ def validate_annotation_change(change, source):
     return {**change, 'items':items}
 
 
+class MainFileChoice(ValueError):
+    def __init__(self, root, path, candidates):
+        super().__init__('当前文件被多个主文件引用，请选择主编译文件。')
+        self.root, self.path, self.candidates = root, path, candidates
+
+
+def tex_file_inputs(source):
+    # Ignore examples and comments without interpreting TeX macros.
+    source = re.sub(r'\\verb\*?([^\w\s])[^\r\n]*?\1|\\begin\s*\{(verbatim\*?|lstlisting|minted|comment)\}[\s\S]*?\\end\s*\{\2\}|\\[^A-Za-z@]|%[^\r\n]*', '', source)
+    main = bool(re.search(r'\\documentclass\b|\\begin\s*\{\s*document\s*\}', source))
+    inputs = []
+    for match in re.finditer(r'\\(input|include)\b\s*(?:\{([^{}]+)\}|("[^"\r\n]+"|[^\s{}%]+))', source):
+        if match[1] == 'include' and match[2] is None:
+            continue
+        name = (match[2] or match[3]).strip().strip('"')
+        if not any(char in name for char in '\\#$\x00'):
+            inputs.append(name)
+    return main, inputs
+
+
+def project_main_file(root, candidate, current=None, choice=None):
+    if document_type(candidate) != 'latex':
+        candidates = [candidate]
+    else:
+        source = snapshot(candidate)['source']
+        directive = re.search(r'^%\s*!\s*TeX\s+root\s*=\s*(.+?)\s*$', '\n'.join(source.splitlines()[:40]), re.I | re.M)
+        if directive:
+            name = directive[1].strip().strip('"\'')
+            target = candidate.parent / name
+            if not target.suffix:
+                target = target.with_suffix('.tex')
+            target = project_source(root, str(target))
+            if document_type(target) != 'latex':
+                raise ValueError('TeX root 必须指向项目内的 .tex 文件。')
+            candidates = [target]
+        elif tex_file_inputs(source)[0]:
+            candidates = [candidate]
+        else:
+            files = {file: tex_file_inputs(snapshot(file)['source']) for file in project_files(root, ('.tex',))}
+            candidates = []
+            for entry, (standalone, _) in files.items():
+                if not standalone:
+                    continue
+                pending, visited = [entry], set()
+                while pending:
+                    file = pending.pop()
+                    if file in visited:
+                        continue
+                    visited.add(file)
+                    for name in files[file][1]:
+                        # TeX resolves nested input paths from the main document's directory.
+                        target = (entry.parent / name).resolve()
+                        if target not in files:
+                            target = Path(str(target) + '.tex')
+                        if target in files and target not in visited:
+                            pending.append(target)
+                if candidate in visited:
+                    candidates.append(entry)
+            if not candidates:
+                candidates = [current if current in files else candidate]
+    if choice is not None:
+        selected = project_source(root, choice)
+        if selected not in candidates:
+            raise ValueError('主文件引用关系已变化，请重新选择。')
+        return selected
+    if len(candidates) == 1:
+        return candidates[0]
+    if current in candidates:
+        return current
+    raise MainFileChoice(root, candidate, candidates)
+
+
 def save_source(path, source, version, history, kind='save', draft=None, annotation_change=None, restored_from=None):
     change = validate_annotation_change(annotation_change, source) if annotation_change is not None else None
     before = snapshot(path)
@@ -1937,6 +2048,21 @@ def save_source(path, source, version, history, kind='save', draft=None, annotat
     return snapshot(path)
 
 
+def open_folder(directory):
+    if not directory.is_dir():
+        raise FileNotFoundError('文件夹不存在。')
+    if sys.platform == 'win32':
+        os.startfile(str(directory))
+    else:
+        try:
+            result = subprocess.run(['open' if sys.platform == 'darwin' else 'xdg-open', str(directory)],
+                                    capture_output=True, timeout=10)
+        except subprocess.TimeoutExpired as error:
+            raise OSError('打开文件夹超时，请重试。') from error
+        if result.returncode:
+            raise OSError(result.stderr.decode('utf-8', errors='replace').strip() or '无法打开系统文件管理器。')
+
+
 def choose_file(path):
     if sys.platform == 'darwin':
         script = ('on run argv\ntry\n'
@@ -1972,9 +2098,20 @@ def tex_tool(name):
     return executable
 
 
-def compiler(source):
+def compiler(source, choice='auto'):
+    if choice not in ('auto', 'pdflatex', 'xelatex'):
+        raise ValueError('Supported TeX programs: auto, pdflatex, xelatex.')
     match = re.search(r'^\s*%\s*!TeX\s+program\s*=\s*(\S+)', '\n'.join(source.splitlines()[:20]), re.I | re.M)
-    name = match[1].lower() if match else 'xelatex' if tex_tool('xelatex') else 'pdflatex'
+    body = re.sub(r'(^|[^\\])((?:\\\\)*)%[^\n]*', r'\1\2', source, flags=re.M)
+    unicode_tex = bool(re.search(r'[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]|\\(?:set(?:main|sans|mono|CJKmain)font|XeTeX)|\\(?:usepackage|RequirePackage|documentclass)(?:\s*\[[^\]]*\])?\s*\{[^}]*\b(?:fontspec|unicode-math|xeCJK|ctex\w*)\b', body))
+    if choice != 'auto':
+        name = choice
+    elif match:
+        name = match[1].lower()
+    elif unicode_tex:
+        name = 'xelatex'
+    else:
+        name = 'pdflatex' if tex_tool('pdflatex') else 'xelatex'
     if name not in ('pdflatex', 'xelatex'):
         raise ValueError('Supported TeX programs: pdflatex, xelatex.')
     executable = tex_tool(name)
@@ -1987,6 +2124,40 @@ def compiler(source):
 def engine_flags(engine):
     probe = subprocess.run([engine, '--version'], capture_output=True, timeout=10)
     return ['--disable-installer'] if b'miktex' in (probe.stdout + probe.stderr).lower() else []
+
+
+def tex_options(server):
+    saved = server.preferences.read() if hasattr(server, 'preferences') else {}
+    try:
+        engines = json.loads(saved.get('latex-codex-tex-engines', '{}'))
+    except (ValueError, TypeError):
+        engines = {}
+    choice = engines.get(os.path.normcase(str(getattr(server, 'main_file', ''))), 'auto') if isinstance(engines, dict) else 'auto'
+    return {'engine_choice': choice if choice in ('auto', 'pdflatex', 'xelatex') else 'auto'}
+
+
+def remember_tex_options(server, choice):
+    saved = server.preferences.read()
+    try:
+        engines = json.loads(saved.get('latex-codex-tex-engines', '{}'))
+    except (ValueError, TypeError):
+        engines = {}
+    if not isinstance(engines, dict):
+        engines = {}
+    key = os.path.normcase(str(server.main_file))
+    if choice == 'auto':
+        engines.pop(key, None)
+    else:
+        engines[key] = choice
+    changes = {'latex-codex-tex-engines': json.dumps(engines, ensure_ascii=False)}
+    changes = {key: value for key, value in changes.items() if saved.get(key) != value}
+    if changes:
+        server.preferences.save(changes)
+
+
+def missing_tex_package(log):
+    match = re.search(r"File\s+[`']([\w.+-]+\.(?:sty|cls))['`]\s+not found", log)
+    return match[1] if match else None
 
 
 def bibliography_signature(path, build, env, bcf=None):
@@ -2026,7 +2197,7 @@ def bibliography_signature(path, build, env, bcf=None):
     return digest.hexdigest()
 
 
-def compile_tex(path, build, source, entry=None, project_root=None, directory=None):
+def compile_tex(path, build, source, entry=None, project_root=None, directory=None, engine_choice='auto'):
     root = project_root or path.parent
     directory = directory or path.parent
     warnings = []
@@ -2036,7 +2207,7 @@ def compile_tex(path, build, source, entry=None, project_root=None, directory=No
         latex, warnings = note_to_tex(source, path, assets_dir=Path(build) / 'obs-assets')
         entry.write_text(latex, encoding='utf-8')
     else:
-        name, engine = compiler(source)
+        name, engine = compiler(source, engine_choice)
     flags = engine_flags(engine)
     command = [engine, *flags, '-no-shell-escape', '-synctex=1', '-recorder', '-interaction=nonstopmode', '-halt-on-error', '-file-line-error', '-output-directory=' + str(build), str(entry or path)]
     # \include writes auxiliary files in the same relative subdirectories.
@@ -2271,11 +2442,12 @@ def locate(path, build, boxes, data, main_file=None, project_root=None):
 
 def history_pdf_context(server, path):
     main_file = getattr(server, 'main_file', path)
+    options = json.dumps(tex_options(server), sort_keys=True) if hasattr(server, 'main_file') else ''
     if main_file == path or document_type(path) == 'markdown':
-        return ''
+        return options
     root = server.project_root
     files = project_files(root) + list(getattr(server, 'dependencies', set()))
-    return str(main_file) + '\0' + project_digest(set(files) - {path})
+    return str(main_file) + '\0' + options + '\0' + project_digest(set(files) - {path})
 
 
 def history_snapshot_key(server, path, source):
@@ -2400,7 +2572,7 @@ def compile_source_snapshot(server, path, source, proofread=False):
                 target = overlay / dependency.relative_to(root)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(dependency, target)
-        ok, log, _ = compile_tex(main_file, directory.name, main_source, entry=main_entry, project_root=root, directory=main_entry.parent)
+        ok, log, _ = compile_tex(main_file, directory.name, main_source, entry=main_entry, project_root=root, directory=main_entry.parent, **tex_options(server))
         pdf = Path(directory.name) / (main_file.stem + '.pdf')
         if not ok or not pdf.is_file():
             raise ValueError(('PDF 校对预览编译失败：' if proofread else '历史版本编译失败：') + log[-1800:])
@@ -2823,30 +2995,38 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
         dependencies = project_dependencies(root, main_file, server.build.name) | server.dependencies
         fingerprint = project_digest(dependencies)
         synced = bool(server.sync_version) and fingerprint == server.project_version
-        return {**state, 'project_root': str(root), 'main_file': str(main_file),
+        return {**state, 'project_root': str(root), 'main_file': str(main_file), **tex_options(server),
                 'main_source': snapshot(main_file)['source'] if main_file != path else '',
                 'files': [{'path': str(file), 'name': file.relative_to(root).as_posix()} for file in files],
                 'project_version': fingerprint, 'sync': synced,
                 'pdf_revision': server.pdf_revision, 'labels': server.labels if synced else {},
                 'citations': server.citations if synced else {}}
 
-    def switch_source(candidate):
+    def switch_source(candidate, entry=None):
         nonlocal path, history, main_file
         state = snapshot(candidate)
+        if entry is None:
+            # Markdown notes compile themselves; LaTeX sources keep the current main document.
+            entry = candidate if document_type(candidate) == 'markdown' or document_type(main_file) == 'markdown' else main_file
+        if entry != main_file and document_type(entry) == 'latex':
+            compiler(snapshot(entry)['source'])
         new_history = History(candidate, root)
         new_history.record(state['source'], 'open')
+        new_build = tempfile.TemporaryDirectory(prefix='latex-codex-') if entry != main_file else None
         if server.history_summary:
             server.history_summary.cancel()
             server.history_summary = None
         path, history = candidate, new_history
-        if candidate.suffix.lower() in SOURCE_EXTENSIONS and candidate != main_file and (document_type(candidate) == 'markdown' or document_type(main_file) == 'markdown'):
-            if document_type(candidate) == 'latex':
-                compiler(state['source'])
-            main_file = candidate
-            server.main_file = candidate
+        if entry != main_file:
+            server.build.cleanup()
+            server.build = new_build
+            main_file = entry
+            server.main_file = entry
             server.sync_version = ''
             server.pdf, server.pdf_revision = b'', ''
             server.dependencies, server.project_version = set(), ''
+            server.page_boxes, server.labels, server.citations = [], {}, {}
+            server.engine_name = ''
         server.selection_sync = None
         if server.sync_version:
             server.sync_version = state['version']
@@ -3079,7 +3259,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
             if self.server.runtime_resume:
                 self.reply(409, {'error': '编辑器正在更新，请稍后重试。'})
                 return
-            if self.path not in ('/runtime/reload', '/tree', '/git/discard', '/git/sync', '/git/resolve', '/git/commit', '/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
+            if self.path not in ('/runtime/reload', '/tree', '/git/discard', '/git/sync', '/git/resolve', '/git/commit', '/main-chat', '/project-review', '/preferences', '/compile', '/proofread', '/save', '/open', '/open-folder', '/source', '/project', '/synctex', '/chat', '/chat/cancel', '/chat/new', '/history/diff', '/history/label', '/history/restore', '/history/pdf', '/history/pdf-cancel', '/history/pdf-cache', '/history/summaries', '/history/summaries/cancel'):
                 self.reply(404, {'error': 'Not found.'})
                 return
             try:
@@ -3216,7 +3396,9 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     if self.server.chat and self.server.chat.result['status'] == 'running':
                         raise FileConflict('请先停止当前回复，再切换文件或项目。')
                     if self.path == '/source':
-                        self.reply(200, switch_source(project_source(root, data.get('path'))))
+                        candidate = project_source(root, data.get('path'))
+                        entry = project_main_file(root, candidate, main_file, data.get('main_file'))
+                        self.reply(200, switch_source(candidate, entry))
                         return
                     folder = data.get('project_root')
                     if not isinstance(folder, str) or not folder:
@@ -3439,6 +3621,12 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     else:
                         self.reply(200, locate(path, self.server.build.name, self.server.page_boxes, data, main_file, root))
                     return
+                if self.path == '/open-folder':
+                    if data.get('path') != str(path):
+                        raise FileConflict('当前文件已切换。')
+                    open_folder(path.parent)
+                    self.reply(200, {'ok': True})
+                    return
                 if self.path == '/open':
                     selected = data.get('path') if isinstance(data.get('path'), str) else choose_file(path)
                     if not selected:
@@ -3448,11 +3636,13 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     if not candidate.is_file() or candidate.suffix.lower() not in SOURCE_EXTENSIONS:
                         raise ValueError('Choose an existing UTF-8 .tex, .md or .markdown file.')
                     state = snapshot(candidate)
-                    if candidate.is_relative_to(root) and (candidate == main_file or document_type(candidate) == 'markdown' or not re.search(r'\\documentclass\b', state['source'])):
-                        self.reply(200, switch_source(candidate))
+                    if candidate.is_relative_to(root):
+                        entry = project_main_file(root, candidate, main_file, data.get('main_file'))
+                        self.reply(200, switch_source(candidate, entry))
                         return
-                    if document_type(candidate) == 'latex':
-                        compiler(state['source'])
+                    entry = project_main_file(candidate.parent, candidate, choice=data.get('main_file'))
+                    if document_type(entry) == 'latex':
+                        compiler(snapshot(entry)['source'])
                     new_history = History(candidate)
                     new_history.record(state['source'], 'open')
                     new_build = tempfile.TemporaryDirectory(prefix='latex-codex-')
@@ -3462,7 +3652,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                         self.server.history_summary.cancel()
                         self.server.history_summary = None
                     path = candidate
-                    main_file, root = candidate, candidate.parent
+                    main_file, root = entry, candidate.parent
                     self.server.main_file, self.server.project_root = main_file, root
                     history = new_history
                     self.server.pdf, self.server.pdf_revision = b'', ''
@@ -3487,7 +3677,19 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     self.reply(200, {**state, 'ok': True, 'sync': False, 'project_version': project_state()['project_version']})
                     return
                 main_source = data['source'] if path == main_file else snapshot(main_file)['source']
-                engine_name, _ = compiler('% !TeX program = xelatex' if document_type(main_file) == 'markdown' else main_source)
+                choice = data.get('engine_choice', tex_options(self.server)['engine_choice'])
+                if choice not in ('auto', 'pdflatex', 'xelatex'):
+                    raise ValueError('Supported TeX programs: auto, pdflatex, xelatex.')
+                engine_name, _ = compiler('% !TeX program = xelatex' if document_type(main_file) == 'markdown' else main_source,
+                    'auto' if document_type(main_file) == 'markdown' else choice)
+                if 'engine_choice' in data:
+                    remember_tex_options(self.server, choice)
+                if self.server.engine_name and self.server.engine_name != engine_name:
+                    # Auxiliary files from another engine are not interchangeable.
+                    self.server.build.cleanup()
+                    self.server.build = tempfile.TemporaryDirectory(prefix='latex-codex-')
+                    self.server.dependencies = set()
+                self.server.engine_name = engine_name
                 version = save_current(data['source'], data['version'])['version']
                 self.server.sync_version = ''
                 self.server.selection_sync = None
@@ -3498,7 +3700,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                 fingerprint = project_digest(dependencies)
                 pdf = Path(self.server.build.name) / (main_file.stem + '.pdf')
                 try:
-                    ok, log, engine_name = compile_tex(main_file, self.server.build.name, main_source, project_root=root)
+                    ok, log, engine_name = compile_tex(main_file, self.server.build.name, main_source, project_root=root, engine_choice=choice)
                     pdf = Path(self.server.build.name) / (main_file.stem + '.pdf')
                     ok = ok and pdf.is_file()
                     if ok:
@@ -3526,7 +3728,12 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                             break
                 self.server.labels = compiled_labels(pdf.with_suffix('.aux')) if ok else {}
                 self.server.citations = compiled_citations(pdf.with_suffix('.aux')) if ok else {}
-                self.reply(200, {'ok': ok, 'log': log[-24000:], 'diagnostic': diagnostic, 'version': version, 'project_version': self.server.project_version, 'pdf_revision': self.server.pdf_revision, 'engine': engine_name, 'sync': bool(self.server.sync_version), 'labels': self.server.labels, 'citations': self.server.citations, 'outline': compiled_outline(pdf.with_suffix('.aux')) if ok else []})
+                self.reply(200, {'ok': ok, 'log': log[-24000:], 'diagnostic': diagnostic, 'version': version, 'project_version': self.server.project_version, 'pdf_revision': self.server.pdf_revision, 'engine': engine_name,
+                    'missing_package': missing_tex_package(log) if not ok else None,
+                    'sync': bool(self.server.sync_version), 'labels': self.server.labels, 'citations': self.server.citations, 'outline': compiled_outline(pdf.with_suffix('.aux')) if ok else []})
+            except MainFileChoice as error:
+                self.reply(200, {'path': str(error.path), 'main_candidates': [
+                    {'path': str(file), 'name': file.relative_to(error.root).as_posix()} for file in error.candidates]})
             except subprocess.TimeoutExpired:
                 self.reply(500, {'error': 'PDF 校对预览编译超时，请重试。' if self.path == '/proofread' else '历史版本编译或定位超时，请重试。' if self.path == '/history/pdf' else '定位超时，请重试。'})
             except FileConflict as error:
@@ -3559,6 +3766,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
     server.sync_version = ''
     server.selection_sync = None
     server.build = build
+    server.engine_name = ''
     server.main_file, server.project_root = main_file, root
     server.dependencies, server.project_version = set(), ''
     server.labels, server.citations = {}, {}

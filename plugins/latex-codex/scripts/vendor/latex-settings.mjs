@@ -39,6 +39,14 @@ export const english = {
   'PDF 校对预览失败：{message}':'PDF proofread preview failed: {message}',
   '请先处理 PDF 校对建议，再进行源码定位。':'Resolve PDF proofread suggestions before source navigation.',
   '校对修改':'Proofread changes', '撤销这处建议':'Undo this suggestion', '保留这处修改':'Keep this change',
+  '选择主编译文件':'Choose main compilation file',
+  '当前文件被多个主文件引用，请选择本次编译使用的主文件。':'This file is included by multiple main files. Choose which one to compile.',
+  '自动编译需先开启自动保存。':'Enable autosave to use automatic compilation.',
+  '{name} · 手动保存与实时预览':'{name} · Manual save and live preview',
+  '{name} · 手动保存与编译':'{name} · Manual save and compilation',
+  '编译引擎':'Compilation engine', '自动识别':'Automatic detection',
+  '缺少 {name}，请补齐宏包后重新编译。':'Missing {name}. Install the package and compile again.',
+  '打开当前文件夹':'Open current folder', '已应用到选区，请手动保存。':'Applied to selection. Save manually.',
   '全部接受':'Accept all', '接受当前文件的全部待确认校对修改':'Accept all pending proofread changes in the current file',
   '已接受当前文件的全部校对修改。':'Accepted all proofread changes in the current file.',
   '全部 Undo':'Undo all', '撤销当前文件的全部待确认校对修改':'Undo all pending proofread changes in the current file',
@@ -156,7 +164,7 @@ export const english = {
   '按时间排列的版本':'Versions by date', '恢复此版本':'Restore this version', '确定恢复？':'Restore this version?', '取消':'Cancel', '确认恢复':'Confirm restore',
   '自动记录按 5 分钟合并显示；命名版本单独保留。':'Automatic saves are grouped every 5 minutes; named versions remain separate.',
   '本地保存；恢复前会保留当前内容和未保存草稿。':'Stored locally. Restoring preserves current contents and unsaved drafts.',
-  '首次打开':'First opened', '自动保存':'Saved', '外部修改':'External edit', '恢复版本':'Restored version', '恢复前的草稿':'Draft before restore',
+  '首次打开':'First opened', '自动保存':'Autosave', '外部修改':'External edit', '恢复版本':'Restored version', '恢复前的草稿':'Draft before restore',
   '保存版本':'Saved version', '正在读取版本…':'Loading version…', '正在读取历史…':'Loading history…', '暂时没有历史记录。':'No versions yet.',
   '这是最早保存的版本。':'This is the earliest saved version.', '两个版本内容相同。':'These versions are identical.',
   '打开／刷新历史时的编辑内容（含未保存修改）':'Editor contents captured on open/refresh, including unsaved changes', '所选对比版本':'Comparison version',
@@ -231,7 +239,7 @@ export const supportedLanguages = ['en', 'zh-CN', 'zh-TW', 'ja', 'fr', 'de', 'es
 export let language = 'en';
 const bindings = new Map();
 const preferenceKeys = ['language','revision-color','outline-style','theme','custom-themes',
-  'editor-mode','source-font-size','chat-color','auto-compile','pdf-box-auto-comment','proofread-editor','proofread-pdf','proofread-project','writing-style','split'].map(name=>'latex-codex-'+name);
+  'editor-mode','source-font-size','chat-color','auto-save','auto-compile','pdf-box-auto-comment','proofread-editor','proofread-pdf','proofread-project','writing-style','split','tex-engines'].map(name=>'latex-codex-'+name);
 let persisted = null, pending = {}, saveTimer, saveQueue = Promise.resolve();
 function preferenceData() {
   if (persisted === null) {
@@ -320,6 +328,7 @@ export function initSettings() {
         ['source-font-size','source-font-size'],['chat-color','chat-color']]) {
         preferences.setItem('latex-codex-'+name, $(id).value);
       }
+      preferences.setItem('latex-codex-auto-save', $('auto-save').checked ? 'on' : 'off');
       preferences.setItem('latex-codex-auto-compile', $('auto-compile').checked ? 'on' : 'off');
       preferences.setItem('latex-codex-pdf-box-auto-comment', $('pdf-box-auto-comment').checked ? 'on' : 'off');
       for (const name of ['proofread-editor','proofread-pdf']) preferences.setItem('latex-codex-'+name, $(name).checked ? 'on' : 'off');

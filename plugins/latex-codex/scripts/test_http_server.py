@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory() as directory:
     path = Path(directory).resolve() / 'main.tex'
     path.write_text('Original.', encoding='utf-8')
     with patch('editor.compiler', return_value=('xelatex', 'unused')), patch('editor.shutil.which', return_value='unused'):
-        server = make_server(path, main_thread='')
+        server = make_server(path, main_thread='', preferences_path=Path(directory) / 'settings.sqlite3')
     accepted = threading.Event()
     original_get_request = server.get_request
 
@@ -48,6 +48,55 @@ with tempfile.TemporaryDirectory() as directory:
         assert request('/')[0] == 200, 'An idle browser preconnect must not block the page.'
         assert request('/vendor/latex-themes.mjs')[0] == 200
         assert request('/vendor/latex-native-annotations.mjs')[0] == 200
+        with patch('editor.compiler', side_effect=lambda source, choice='auto': (choice if choice != 'auto' else 'pdflatex', 'unused')), \
+                patch('editor.compile_tex', return_value=(False, "MiKTeX\n! LaTeX Error: File `diagbox.sty' not found.", 'pdflatex')) as compile_job:
+            current = json.loads(request('/state')[1])
+            payload = {'source':current['source'], 'version':current['version'], 'engine_choice':'pdflatex'}
+            code, body = request('/compile', payload)
+            result = json.loads(body)
+            assert code == 200 and result['missing_package'] == 'diagbox.sty'
+            assert compile_job.call_args.kwargs['engine_choice'] == 'pdflatex'
+            assert json.loads(request('/state')[1])['engine_choice'] == 'pdflatex'
+            build_before = server.build.name
+            assert request('/compile', {**payload, 'engine_choice':'xelatex'})[0] == 200
+            assert server.build.name != build_before, 'Changing engines starts with clean temporary auxiliaries.'
+            assert json.loads(request('/state')[1])['engine_choice'] == 'xelatex'
+            assert request('/compile', {**payload, 'engine_choice':'cmd.exe'})[0] == 400
+            assert request('/compile', {**payload, 'engine_choice':'auto'})[0] == 200
+        print('PASS: per-main engine persistence, fresh build on engine changes and structured missing packages')
+        with patch('editor.open_folder') as open_folder, patch('editor.compile_tex') as no_compile, \
+                patch('editor.compiler', return_value=('xelatex', 'unused')):
+            assert request('/open-folder')[0] == 404, 'Opening a folder requires an explicit POST.'
+            assert request('/open-folder', {})[0] == 409
+            assert request('/open-folder', {'path': str(path.parent)})[0] == 409
+            open_folder.assert_not_called()
+            assert request('/open-folder', {'path': str(path)})[0] == 200
+            open_folder.assert_called_once_with(path.parent)
+            child = path.parent / '中文 subfolder' / 'notes.md'
+            child.parent.mkdir()
+            child.write_text('# Notes', encoding='utf-8')
+            state = json.loads(request('/state')[1])
+            assert request('/source', {'path': str(child), 'version': state['version']})[0] == 200
+            open_folder.reset_mock()
+            assert request('/open-folder', {'path': str(path)})[0] == 409
+            open_folder.assert_not_called()
+            assert request('/open-folder', {'path': str(child)})[0] == 200
+            open_folder.assert_called_once_with(child.parent)
+            with closing(HTTPConnection(*server.server_address, timeout=3)) as connection:
+                connection.request('POST', '/open-folder', json.dumps({'path': str(child)}),
+                                   {'Content-Type': 'application/json', 'Origin': 'https://example.com'})
+                response = connection.getresponse()
+                assert response.status == 403
+                response.read()
+            assert open_folder.call_count == 1, 'Cross-origin requests cannot launch the file manager.'
+            open_folder.side_effect = OSError('File manager unavailable')
+            code, body = request('/open-folder', {'path': str(child)})
+            assert code == 500 and json.loads(body)['error'] == 'File manager unavailable'
+            assert path.read_text(encoding='utf-8') == 'Original.' and child.read_text(encoding='utf-8') == '# Notes'
+            state = json.loads(request('/state')[1])
+            assert request('/source', {'path': str(path), 'version': state['version']})[0] == 200
+            no_compile.assert_not_called()
+        print('PASS: current source folder, subfile switches, stale/cross-origin rejection and failure reporting without saves/compiles')
         with closing(HTTPConnection(*server.server_address, timeout=3)) as connection:
             connection.request('GET', '/')
             response = connection.getresponse()

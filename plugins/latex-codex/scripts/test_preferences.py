@@ -49,6 +49,9 @@ with tempfile.TemporaryDirectory() as directory:
         assert servers[0].server_port != servers[1].server_port
         assert request(servers[0], '/preferences', {'latex-codex-language': 'zh-CN'})[0] == 200
         assert json.loads(request(servers[1], '/preferences')[1])['latex-codex-language'] == 'zh-CN'
+        for value in ('on', 'off'):
+            assert request(servers[0], '/preferences', {'latex-codex-auto-save': value})[0] == 200
+            assert json.loads(request(servers[1], '/preferences')[1])['latex-codex-auto-save'] == value
         assert request(servers[0], '/preferences', {'latex-codex-pdf-box-auto-comment': 'on'})[0] == 200
         assert json.loads(request(servers[1], '/preferences')[1])['latex-codex-pdf-box-auto-comment'] == 'on'
         assert Preferences(database).read()['latex-codex-pdf-box-auto-comment'] == 'on'

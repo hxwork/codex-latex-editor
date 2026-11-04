@@ -16,7 +16,7 @@ function element(id) {
     dataset: {}, srcWrites: 0, set src(value) { this.imageSource=value; this.srcWrites++; },
     style: {setProperty(key, value) { this[key] = value; }},
     attributes:{},classList: {add() {}, remove() {}, toggle() {}}, setAttribute(key,value) {this.attributes[key]=value;},
-    showPopover(){this.open=true;},hidePopover(){this.open=false;},focus(){this.focused=true;},
+    showPopover(){this.open=true;},hidePopover(){this.open=false;},showModal(){this.open=true;},close(){this.open=false;},focus(){this.focused=true;},blur(){this.focused=false;},
     events:{},addEventListener(name,handler){this.events[name]=handler;},getBoundingClientRect(){return {left:120,top:180,width:280,height:28,bottom:208};},
     offsetWidth:240,offsetHeight:42,
     setPointerCapture(id) { this.captured = id; },
@@ -41,7 +41,7 @@ const editor = {
   scrollIntoView(cursor,margin){this.jump={...cursor,margin};},
   on(name,fn) {const previous=editorEvents[name];editorEvents[name]=(...args)=>{previous?.(...args);fn(...args);};}, setOption(key, value) { options[key] = value; },
   getDoc(){return this.doc;},
-  toggleComment(){commentCalls++;},somethingSelected:()=>selected,
+  toggleComment(){commentCalls++;},somethingSelected:()=>selected,listSelections:()=>[{}],getTokenTypeAt:()=>'',
   coordsChar:()=>({line:3,ch:2}),setCursor(cursor){cursorChanges++;this.cursor=cursor;},focus(){},refresh(){this.refreshes=(this.refreshes||0)+1;},
   setSelection(from,to){this.selection={from,to};},
   getOption: key => options[key], getCursor: () => ({line: 88, ch: 8}),
@@ -99,6 +99,18 @@ const context = vm.createContext({
   fetch: () => new Promise(() => {}),
 });
 vm.runInContext(script, context);
+const html = fs.readFileSync(path.join(__dirname, 'editor.py'), 'utf8');
+assert.match(html,/<input id="auto-save" type="checkbox"(?![^>]*checked)[^>]*>/);
+assert.match(html,/<button id="pan-mode" aria-pressed="false"/);
+assert(html.includes('<span id="pan-label" data-i18n="选字">选字</span>'));
+assert(!html.includes('<div id="preview" class="hand-tool"'));
+for(const preference of ['on','off']){
+  const controls={};
+  const restored=vm.runInNewContext(script.slice(script.indexOf('const autoSave='),script.indexOf('function updateCompileCaption()'))+'\n({autoSave,autoCompile});',{
+    document:{querySelector:id=>controls[id]??=( {})},preferences:{getItem:key=>key==='latex-codex-auto-save'?preference:'on'},
+  });
+  assert.equal(restored.autoSave.checked,preference==='on','Reload restores the explicit autosave preference.');
+}
 const themeSelect=element('#theme');
 for(const [value,cmTheme] of [['neo','neo'],['solarized-light','solarized light'],['solarized-dark','solarized dark'],['material-palenight','material-palenight'],['cobalt','cobalt']]){
   themeSelect.value=value;themeSelect.onchange();
@@ -327,9 +339,9 @@ vm.runInContext("busy=true;synchronize('forward')", context);
 assert.equal(vm.runInContext('pendingForward', context), true);
 vm.runInContext("pendingForward=false;synchronize('backward')", context);
 assert.equal(vm.runInContext('pendingForward', context), false);
-let direction;
+let direction,syncPosition;
 const realSynchronize=vm.runInContext('synchronize',context);
-context.recordSync = value => direction = value;
+context.recordSync = (value,position) => {direction=value;syncPosition=position;};
 vm.runInContext('synchronize=recordSync', context);
 assert.equal(mappings[0][0], 'zz');
 assert.equal(mappings[0][4].context, 'normal');
@@ -351,6 +363,9 @@ assert.equal(gutterPrevented,1);
 assert.deepEqual(JSON.parse(JSON.stringify(editor.cursor)),{line:12,ch:0});
 assert.equal(direction,'forward','Double-clicking a logical source line uses the existing SyncTeX forward lookup.');
 const preview = element('#preview');
+assert.equal(vm.runInContext('panMode',context),false,'PDFs open in text selection mode.');
+element('#pan-mode').onclick();
+assert.equal(element('#pan-label').textContent,'拖动','The mode button still enables panning.');
 const pdfImage = {dataset: {pageNumber: '2'},clientLeft:0,clientTop:0,clientWidth:500,clientHeight:700,getBoundingClientRect: () => ({left: 0, top: 0, width: 500, height: 700})};
 const pointer = {pointerId: 1, pointerType: 'mouse', button: 0, buttons: 1, clientX: 200, clientY: 200,
   target: {closest: selector => selector === '.page' ? pdfImage : null}, preventDefault() {}};
@@ -385,7 +400,17 @@ preview.onpointerdown(pointer);
 preview.onpointermove({...pointer,clientX:0});
 assert.equal(preview.scrollLeft,140,'Selecting text must not drag the PDF.');
 direction=null;preview.ondblclick(pointer);
-assert.equal(direction,null,'Double-click in selection mode must retain the PDF word selection.');
+assert.equal(direction,'backward','Double-click in selection mode uses the same inverse lookup as pan mode.');
+assert.deepEqual(JSON.parse(JSON.stringify(syncPosition)),{page:2,x:200,y:500});
+assert.equal(vm.runInContext('spaceLocked',context),false,'Plain double-click does not lock Space.');
+for(const event of [
+  {...pointer,button:2},
+  {...pointer,target:{closest:()=>null}},
+  {...pointer,target:{closest:selector=>selector==='.page'?pdfImage:{}}},
+]){
+  direction=null;preview.ondblclick(event);assert.equal(direction,null,'Other buttons, outside pages and interactive PDF elements do not jump.');
+}
+preview.inert=true;direction=null;preview.ondblclick(pointer);assert.equal(direction,null);preview.inert=false;
 const space={code:'Space',target:{closest:()=>null},preventDefault(){this.prevented=true;}};
 preview.onkeydown(space);assert(space.prevented);assert.equal(vm.runInContext('spacePan',context),true);
 assert.equal(element('#pan-label').textContent,'选字','Temporary panning must preserve the selected mode.');
@@ -414,7 +439,7 @@ assert.equal(vm.runInContext('spacePan',context),false);assert.equal(preview.cap
 preview.onpointermove({...pointer,clientY:100});assert.equal(preview.scrollTop,400,'Space release immediately ends dragging.');
 preview.onpointerdown(pointer);preview.onpointermove({...pointer,clientY:100});
 assert.equal(preview.scrollTop,400,'Selection mode resumes after release.');
-direction=null;preview.ondblclick(pointer);assert.equal(direction,null,'After release, double-click selects PDF text.');
+direction=null;preview.ondblclick(pointer);assert.equal(direction,'backward','After Space release, selection mode still supports double-click source navigation.');
 preview.onkeydown({...space});windowHandlers.blur.forEach(handler=>handler());
 assert.equal(vm.runInContext('spacePan',context),false,'Losing window focus must release temporary panning.');
 preview.onkeydown({...space,ctrlKey:true});assert.equal(vm.runInContext('spacePan',context),false);
@@ -508,6 +533,50 @@ preview.scrollTop=350;
 element('#pan-mode').onclick();
 context.fetch=async()=>{downloads++;return{ok:true,arrayBuffer:async()=>new ArrayBuffer(1)};};
 (async()=>{
+  const folderButton=element('#open-folder'),previousFilename=element('#filename').title,previousFetch=context.fetch;
+  assert.match(html,/<button id="open-folder"[^>]*disabled[^>]*data-i18n-aria-label="打开当前文件夹"/);
+  assert(html.indexOf('<button id="log-toggle"')<html.indexOf('<button id="open-folder"'));
+  const folderSource=editor.doc,folderCursor=cursorChanges;
+  let releaseFolder,folderCalls=0;
+  element('#filename').title='/project/中文 folder/notes.md';folderButton.disabled=false;
+  context.fetch=(url,options)=>{
+    folderCalls++;assert.equal(url,'/open-folder');assert.equal(options.method,'POST');
+    assert.deepEqual(JSON.parse(options.body),{path:'/project/中文 folder/notes.md'});
+    return new Promise(resolve=>{releaseFolder=resolve;});
+  };
+  const openingFolder=folderButton.onclick();assert.equal(folderButton.disabled,true);
+  await folderButton.onclick();assert.equal(folderCalls,1,'Repeated clicks cannot open duplicate windows while waiting.');
+  releaseFolder({ok:true,json:async()=>({ok:true})});await openingFolder;
+  assert.equal(folderButton.disabled,false);
+  element('#filename').title='/project/other.tex';
+  context.fetch=async(url,options)=>{
+    assert.equal(url,'/open-folder');assert.deepEqual(JSON.parse(options.body),{path:'/project/other.tex'});
+    return {ok:false,status:500,json:async()=>({error:'File manager unavailable'})};
+  };
+  await folderButton.onclick();assert.equal(folderButton.disabled,false);
+  assert.match(element('#status').textContent,/File manager unavailable/);
+  assert.equal(editor.doc,folderSource);assert.equal(cursorChanges,folderCursor);
+  element('#filename').title=previousFilename;context.fetch=previousFetch;
+  console.log('PASS: folder button follows the active file, prevents repeat launches, reports failures and preserves source/cursor');
+  {
+  const previousEngineFetch=context.fetch;
+  const engineMenu=element('#tex-engine');
+  vm.runInContext("documentType='latex';markdownPdf=false;busy=syncBusy=conflict=false;version='engine-v';saved='Compiler source'",context);
+  options.readOnly=false;editor.getValue=()=> 'Compiler source';engineMenu.value='auto';
+  const engineRequests=[];
+  context.fetch=async(url,options)=>{
+    assert.equal(url,'/compile');engineRequests.push(JSON.parse(options.body));
+    return {ok:true,json:async()=>({ok:false,version:'engine-v',log:'missing package',missing_package:'diagbox.sty'})};
+  };
+  await context.compile();assert.equal(engineRequests[0].engine_choice,'auto');assert.equal('allow_installer' in engineRequests[0],false);
+  assert.match(element('#status').textContent,/diagbox.sty/);
+  engineMenu.value='xelatex';await engineMenu.onchange();assert.equal(engineRequests.at(-1).engine_choice,'xelatex');
+  assert.equal(editor.getValue(),'Compiler source');
+  vm.runInContext('busy=true;updateSyncControls()',context);assert(engineMenu.disabled);
+  vm.runInContext('busy=false',context);
+  console.log('PASS: compiler menu sends the chosen engine, reports missing packages and locks during operations');
+  context.fetch=previousEngineFetch;
+  }
   context.findMathRanges=(await import('./vendor/latex-hover.mjs')).findMathRanges;
   context.documentMacros=(await import('./vendor/latex-hover.mjs')).documentMacros;
   const actualKatex=(await import('./vendor/katex/katex.mjs')).default;
@@ -545,9 +614,47 @@ context.fetch=async()=>{downloads++;return{ok:true,arrayBuffer:async()=>new Arra
   assert.equal(vm.runInContext('pdfBuild',context),'second');
   let source='compiled source',release;
   editor.getValue=()=>source;
-  const automatic=element('#auto-compile');
+  const autosave=element('#auto-save'),automatic=element('#auto-compile');
+  assert.equal(autosave.checked,false,'Autosave is off unless explicitly enabled.');
   assert.equal(automatic.checked,true);
-  vm.runInContext("busy=false;conflict=false;version=pdfVersion='v';saved='compiled source'",context);
+  assert.equal(automatic.disabled,true,'Automatic compilation cannot save implicitly while autosave is off.');
+  vm.runInContext("busy=false;conflict=false;version=pdfVersion='v';saved='compiled source';mainFile='document.tex'",context);
+  let manualRoutes=[];
+  source='manual draft';
+  context.fetch=async url=>{manualRoutes.push(url);return {ok:true,json:async()=>({version:'manual-v',ok:true,log:'ok',sync:true,pdf_revision:'second'})};};
+  editorEvents.change();
+  assert.equal(uiTimers.has(vm.runInContext('timer',context)),false,'Default editing never schedules a save or compile.');
+  assert.equal(vm.runInContext('saved',context),'compiled source');
+  assert.deepEqual(manualRoutes,[]);
+  const leaving={preventDefault(){this.prevented=true;}};
+  windowHandlers.beforeunload.forEach(handler=>handler(leaving));
+  assert.equal(leaving.prevented,true,'Unsaved manual edits retain the close/refresh warning.');
+  context.fetch=async url=>{manualRoutes.push(url);assert.equal(url,'/state');return {ok:true,json:async()=>({version:'v',project_version:'external-child-edit'})};};
+  vm.runInContext('loading=false;syncBusy=false;historyDialog.open=false',context);
+  await context.load();
+  assert.deepEqual(manualRoutes,['/state'],'Background project polling cannot save a manual draft.');
+  assert.equal(source,'manual draft');
+  context.fetch=async url=>{manualRoutes.push(url);return {ok:true,json:async()=>({version:'manual-v',ok:true,log:'ok',sync:true,pdf_revision:'second'})};};
+  await element('#compile').onclick();
+  assert.equal(manualRoutes.at(-1),'/compile','The manual button still saves and compiles with autosave off.');
+  assert.equal(vm.runInContext('saved',context),source);
+  source+=' using shortcut';
+  await options.extraKeys['Ctrl-S'](editor);
+  assert.equal(manualRoutes.at(-1),'/compile','The save shortcut works with autosave off.');
+  assert.equal(vm.runInContext('saved',context),source);
+  autosave.checked=true;autosave.onchange();
+  assert.equal(stored.get('latex-codex-auto-save'),'on');
+  assert.equal(automatic.disabled,false);
+  source+=' pending';editorEvents.change();
+  const pendingAutosave=vm.runInContext('timer',context),staleAutosave=uiTimers.get(pendingAutosave);
+  autosave.checked=false;autosave.onchange();
+  assert.equal(stored.get('latex-codex-auto-save'),'off');
+  assert.equal(uiTimers.has(pendingAutosave),false,'Turning autosave off cancels a pending save.');
+  manualRoutes=[];staleAutosave();
+  assert.deepEqual(manualRoutes,[],'A stale timer cannot save after autosave is turned off.');
+  console.log('PASS: autosave defaults off, restores preferences, cancels pending saves, protects manual drafts and preserves explicit save/compile');
+  autosave.checked=true;autosave.onchange();
+  vm.runInContext("version=pdfVersion='v';saved='compiled source'",context);source='compiled source';
   automatic.checked=false;automatic.onchange();
   assert.equal(stored.get('latex-codex-auto-compile'),'off');
   source='saved without compilation';let autoRoute;
@@ -981,6 +1088,34 @@ After.`;
   assert.equal(editor.doc.source,'Line one\nLine two');assert.equal(vm.runInContext('saved',context),editor.doc.source,'Loaded CRLF files must not appear dirty in the LF editor.');
   source='Main source';editor.swapDoc=doc=>{editor.doc=doc;source=doc.source;};
   vm.runInContext("busy=false;syncBusy=false;conflict=false;loading=false;display({source:'Main source',version:'main-v',name:'main.tex',path:'/project/main.tex',project_root:'/project',main_file:'/project/main.tex',project_version:'project-v'});pdfVersion=version;pdfBuild='second'",context);
+  const pickerButton=element('#source-file'),pollDoc=editor.getDoc(),pollKeyMap=options.keyMap;
+  const pickerState={source:'Main source',version:'main-v',name:'main.tex',path:'/project/main.tex',project_root:'/project',main_file:'/project/main.tex',project_version:'project-v',files:[{path:'/project/main.tex',name:'main.tex'},{path:'/project/new.tex',name:'new.tex'}]};
+  context.fetch=async url=>{assert.equal(url,'/state');return {ok:true,json:async()=>pickerState};};
+  await vm.runInContext('load()',context);
+  assert.equal(pickerButton.files.length,2,'New sources appear even when the active source version is unchanged.');
+  const pickerUpdates=pickerButton.updates;
+  await vm.runInContext('load()',context);
+  assert.equal(pickerButton.updates,pickerUpdates,'Unchanged polling must not rebuild an open source picker.');
+  pickerState.files[1]={path:'/project/renamed.tex',name:'renamed.tex'};
+  await vm.runInContext('load()',context);
+  assert.equal(pickerButton.files[1].path,'/project/renamed.tex','Renamed sources replace old entries.');
+  pickerState.files=pickerState.files.slice(0,1);
+  await vm.runInContext('load()',context);
+  assert.equal(pickerButton.files.length,1,'Deleted sources disappear from the picker.');
+  assert.equal(editor.getDoc(),pollDoc,'Refreshing project metadata must not replace the editor document.');
+  assert.equal(options.keyMap,pollKeyMap,'Refreshing project metadata must preserve the editing mode.');
+  const protectedUpdates=pickerButton.updates;
+  await vm.runInContext('load()',context);
+  assert.equal(pickerButton.updates,protectedUpdates,'A different document cannot relabel the active source picker.');
+  const priorProjectReview=stored.get('latex-codex-proofread-project');stored.set('latex-codex-proofread-project','off');
+  vm.runInContext('selectionChat.hasAnnotations=true',context);
+  context.fetch=async()=>({ok:true,json:async()=>({...pickerState,source:'External edit',version:'external-v'})});
+  await vm.runInContext('load()',context);
+  assert.equal(vm.runInContext('conflict',context),true,'Unsent chat drafts use the existing external-change protection.');
+  assert.equal(editor.getDoc(),pollDoc);assert.equal(source,'Main source');
+  vm.runInContext('selectionChat.hasAnnotations=false;conflict=false',context);
+  if(priorProjectReview===undefined)stored.delete('latex-codex-proofread-project');else stored.set('latex-codex-proofread-project',priorProjectReview);
+  console.log('PASS: project file additions, renames and removals refresh without replacing the active draft or editing mode');
   const childState={source:'Appendix paragraph.',main_source:macroPreamble,version:'appendix-v',name:'body.tex',path:'/project/appendices/body.tex',project_root:'/project',main_file:'/project/main.tex',project_version:'project-v',sync:true,pdf_revision:'second',labels:{eq:'7'},citations:{paper:'9'},files:[{path:'/project/main.tex',name:'main.tex'},{path:'/project/appendices/body.tex',name:'appendices/body.tex'}]};
   const oldPreview=viewer.pdfDocument;let sourceSwitches=0;
   context.fetch=async(url,options)=>{
@@ -1012,6 +1147,42 @@ After.`;
   assert.deepEqual(routes,['/save','/source'],'Navigation saves the active child before switching.');
   assert.equal(vm.runInContext('pdfVersion',context),'','Unsynced child edits disable old PDF synchronization.');
   assert.equal(vm.runInContext('mainSource',context),'','Opening the main source must discard the previous child preamble snapshot.');
+  source='Main source';vm.runInContext("saved='Main source'",context);
+  context.fetch=async(url,options)=>{
+    assert.equal(url,'/source');assert.equal(JSON.parse(options.body).path,'/project/letter-body.tex');
+    return {ok:true,json:async()=>({...childState,source:'Letter body.',main_source:'Letter main.',name:'letter-body.tex',path:'/project/letter-body.tex',main_file:'/project/letter.tex',version:'letter-v',sync:false,pdf_revision:''})};
+  };
+  assert.equal(await context.switchSource('/project/letter-body.tex',false),true);
+  assert.equal(vm.runInContext('mainFile',context),'/project/letter.tex');
+  assert.equal(viewer.pdfDocument,null,'A different main discards the old paper PDF.');
+  assert.equal(element('a[download]').download,'letter.pdf');
+  const mainDialog=element('#main-file-dialog'),mainChoice=element('#main-file-choice');
+  const choices=[{path:'/project/paper.tex',name:'paper.tex'},{path:'/project/third.tex',name:'third.tex'}];
+  const choiceRequests=[];
+  context.fetch=async(url,options)=>{
+    const body=JSON.parse(options.body);choiceRequests.push(body);
+    return {ok:true,json:async()=>body.main_file?{path:body.path,main_file:body.main_file}:{path:'/project/shared.tex',main_candidates:choices}};
+  };
+  const choosing=context.sourceRequest('/source',{path:'/project/shared.tex',version:'letter-v'});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert(mainDialog.open);assert.deepEqual(mainChoice.children.map(option=>option.textContent),['paper.tex','third.tex']);
+  mainChoice.value='/project/third.tex';mainDialog.returnValue='open';mainDialog.close();mainDialog.events.close();
+  const chosen=await choosing;
+  assert.equal(chosen.main_file,'/project/third.tex');assert.equal(choiceRequests.length,2);
+  assert.equal(choiceRequests[1].version,'letter-v');assert.equal(choiceRequests[1].path,'/project/shared.tex');
+  source='Letter body.';vm.runInContext("saved='Letter body.'",context);choiceRequests.length=0;
+  const oldDocument=editor.getDoc(),cancelledSwitch=context.switchSource('/project/shared.tex');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(vm.runInContext('busy',context),true);assert.equal(options.readOnly,'nocursor');
+  mainDialog.returnValue='cancel';mainDialog.close();mainDialog.events.close();
+  assert.equal(await cancelledSwitch,false);assert.equal(choiceRequests.length,1,'Cancelling never sends a second request or compiles.');
+  assert.equal(editor.getDoc(),oldDocument);assert.equal(vm.runInContext('mainFile',context),'/project/letter.tex');
+  assert.equal(options.readOnly,false);assert.equal(vm.runInContext('busy',context),false);
+  console.log('PASS: main changes clear the previous PDF and download target; shared children offer safe selection and cancellation');
+  source='Main source';
+  context.display({...childState,source,main_source:'',version:'main-v2',name:'main.tex',path:'/project/main.tex',sync:false});
+  context.fetch=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(1)});
+  await context.refreshPreview({pdf_revision:'second'});
   assert.throws(()=>context.sourcePdfTextRange('alpha missing beta',[1],'alpha beta',{}, {},'alpha missing beta',true),/唯一匹配/,'Rectangular prose selections cannot guess across omitted words.');
   const similarBox=(source,text,continuous=true)=>JSON.parse(JSON.stringify(context.sourcePdfTextRange(source,[1],text,{}, {},source,true,continuous)));
   const similarSource='Before. A precise bound follows. After.';
