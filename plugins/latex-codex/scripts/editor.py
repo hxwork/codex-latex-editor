@@ -473,11 +473,11 @@ function setEditorMode(){
   }
   editor.state.keySeq=null;
   editor.closeHint();editor.setExtending(false);editor.setOption('keyMap',editorMode.value);
-  const keys={'Cmd-S':compile,'Cmd-/':toggleSourceComment,'Ctrl-F':sourceSearch.open,'Cmd-F':sourceSearch.open};
+  const keys={'Cmd-S':compile,'Cmd-/':toggleSourceComment,'Cmd-F':sourceSearch.open};
   if(editorMode.value==='vim')keys['Ctrl-C']=false;
   Object.assign(keys,editorMode.value==='emacs'
     ? {'Alt-/':completeLatex,'Alt-;':toggleSourceComment}
-    : {'Ctrl-S':compile,'Ctrl-Space':completeLatex,'Alt-/':toggleSourceComment,'Ctrl-/':toggleSourceComment});
+    : {'Ctrl-F':sourceSearch.open,'Ctrl-S':compile,'Ctrl-Space':completeLatex,'Alt-/':toggleSourceComment,'Ctrl-/':toggleSourceComment});
   editor.setOption('extraKeys',keys);
   editor.setOption('showCursorWhenSelecting',editorMode.value!=='vim');
   try{preferences.setItem('latex-codex-editor-mode',editorMode.value);}catch(e){}
