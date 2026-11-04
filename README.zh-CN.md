@@ -17,6 +17,8 @@ python plugins/latex-codex/scripts/editor.py /path/to/main.tex
 
 在侧边浏览器打开打印的本地地址。选中源码或 PDF 内容，添加批注，然后点击 **Send**。
 
+**GitHub Copilot（本 `copilot` 分支）：** 执行 `copilot plugin marketplace add hxwork/codex-latex-editor#copilot`，再执行 `copilot plugin install latex-copilot@latex-copilot-marketplace`。`main` 分支保持 Codex 版本。
+
 DeepSeek Harness 由独立的可选插件 **latex-deepseek** 提供；安装或更新 LaTeX Codex 始终保留原生 Codex 后端。两种插件的安装与维护细节见 [AGENTS.md](AGENTS.md)。
 
 ## 功能演示

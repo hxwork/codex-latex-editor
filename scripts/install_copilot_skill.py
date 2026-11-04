@@ -27,8 +27,7 @@ def install(target):
     staging = Path(tempfile.mkdtemp(prefix='.latex-copilot-', dir=target.parent))
     try:
         shutil.copytree(PLUGIN / 'scripts', staging / 'scripts', ignore=ignored)
-        skill = (PLUGIN / 'skills' / 'latex-codex' / 'SKILL.md').read_text(encoding='utf-8')
-        skill = skill.replace('name: latex-codex', 'name: ' + NAME, 1)
+        skill = (PLUGIN / 'skills' / NAME / 'SKILL.md').read_text(encoding='utf-8')
         editor = staging / 'scripts' / 'editor.py'
         relative = 'Use `../../scripts/editor.py` relative to this skill directory.'
         if relative not in skill:

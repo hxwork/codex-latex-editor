@@ -1,5 +1,5 @@
 ---
-name: latex-codex
+name: latex-copilot
 description: Open a LaTeX or Markdown file in a local Overleaf-style editor shown in the GitHub Copilot app's Browser side panel, with local TeX compilation, PDF preview and Copilot-powered review edits. Use when the user asks for this editor or LaTeX Copilot, wants to edit or preview a .tex/.md document with their local TeX installation, or project instructions choose it as the LaTeX editor, including after creating or editing a document.
 ---
 

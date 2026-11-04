@@ -17,6 +17,8 @@ python plugins/latex-codex/scripts/editor.py /path/to/main.tex
 
 Open the printed local URL in the side browser. Select source or PDF text, add comments and click **Send**.
 
+**GitHub Copilot (this `copilot` branch):** `copilot plugin marketplace add hxwork/codex-latex-editor#copilot`, then `copilot plugin install latex-copilot@latex-copilot-marketplace`. The `main` branch stays the Codex version.
+
 DeepSeek Harness support is a separate optional plugin, **latex-deepseek**. Installing or updating LaTeX Codex keeps the native Codex backend. See [AGENTS.md](AGENTS.md) for installation and maintenance of either plugin.
 
 ## Demos

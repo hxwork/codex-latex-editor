@@ -1,0 +1,24 @@
+{
+  "name": "latex-copilot-marketplace",
+  "owner": {
+    "name": "hxwork"
+  },
+  "metadata": {
+    "description": "LaTeX editor plugin for GitHub Copilot. Plugins are pinned to the copilot branch; main remains the Codex version."
+  },
+  "plugins": [
+    {
+      "name": "latex-copilot",
+      "description": "Local Overleaf-style LaTeX and Markdown editor in the Copilot Browser panel, with local TeX compilation and Copilot review edits.",
+      "version": "0.3.12-copilot.1",
+      "source": {
+        "source": "github",
+        "repo": "hxwork/codex-latex-editor",
+        "ref": "copilot",
+        "path": "plugins/latex-codex"
+      },
+      "category": "Productivity",
+      "keywords": ["latex", "tex", "markdown", "pdf", "overleaf"]
+    }
+  ]
+}

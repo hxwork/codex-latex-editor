@@ -6,13 +6,24 @@
 
 ## LaTeX 默认打开方式
 
-- 用户已指定本项目使用 LaTeX Codex。创建或修改 `.tex` 文稿后，默认按 `plugins/latex-codex/skills/latex-codex/SKILL.md` 的流程，在 Codex 右侧浏览器面板打开该文稿，使用本地 TeX 编译；用户明确要求内置编辑器时再使用内置编辑器。
+- 用户已指定本项目使用 LaTeX Codex。创建或修改 `.tex` 文稿后，默认按 `plugins/latex-codex/skills/latex-copilot/SKILL.md` 的流程，在 Codex 右侧浏览器面板打开该文稿，使用本地 TeX 编译；用户明确要求内置编辑器时再使用内置编辑器。
 - 同一文稿已有本对话启动的服务时复用，外部源码修改由编辑器正常同步；有未保存编辑或冲突时不得直接覆盖。切换文稿遵循插件的文件打开流程。
 - 此约定控制代理的打开和编译流程，不替换应用自带的 `.tex` 文件预览入口。不要为此调用 `open_in_codex` 的文件目标或 `compile_latex_document`，应打开插件服务的浏览器 URL；不要修改应用内部文件或全局设置。
 
 ## 安装
 
-### GitHub Copilot 技能（本 fork）
+### GitHub Copilot 插件（本 fork）
+
+分支约定：`main` 保持原生 Codex 版本，`copilot` 分支为 Copilot 版本。Copilot 插件清单是 `plugins/latex-codex/plugin.json`（Agent Plugins 1.0，名称 `latex-copilot`），技能位于 `plugins/latex-codex/skills/latex-copilot/`。插件市场只放在 `copilot` 分支的 `.github/plugin/marketplace.json`，插件来源固定为 GitHub `hxwork/codex-latex-editor`、`ref: copilot`、`path: plugins/latex-codex`，因此 `main` 无需改动。安装：
+
+```sh
+copilot plugin marketplace add hxwork/codex-latex-editor#copilot
+copilot plugin install latex-copilot@latex-copilot-marketplace
+```
+
+更新用 `copilot plugin marketplace update latex-copilot-marketplace` 和 `copilot plugin update latex-copilot`。发布新版本时同步 `plugin.json` 与 marketplace 条目的 `version`。插件与下面的个人技能同名，个人技能优先；改用插件安装后删除 `~/.copilot/skills/latex-copilot`。
+
+### GitHub Copilot 个人技能（本机，可选）
 
 AI 请求使用已登录（`copilot login`）的 GitHub Copilot CLI。在仓库根目录执行：
 
@@ -20,7 +31,7 @@ AI 请求使用已登录（`copilot login`）的 GitHub Copilot CLI。在仓库�
 python3 scripts/install_copilot_skill.py
 ```
 
-它把 `plugins/latex-codex/scripts/` 运行时（不含测试、缓存和 frontend 源码）与改名为 `latex-copilot` 的 `SKILL.md` 复制到 `~/.copilot/skills/latex-copilot/`，先完整生成再替换旧安装；`copilot skill list` 可见后，任何 Copilot 会话都可按技能启动编辑器，并在应用的 Browser 侧面板打开回环地址。安装副本独立于仓库检出；更新仓库后重新执行即可。`--target` 可指定其他目录。卸载即删除该目录。已在运行的服务需停止后从新安装路径重新启动。
+它把 `plugins/latex-codex/scripts/` 运行时（不含测试、缓存和 frontend 源码）与 `skills/latex-copilot/SKILL.md` 复制到 `~/.copilot/skills/latex-copilot/`，先完整生成再替换旧安装；`copilot skill list` 可见后，任何 Copilot 会话都可按技能启动编辑器，并在应用的 Browser 侧面板打开回环地址。安装副本独立于仓库检出；更新仓库后重新执行即可。`--target` 可指定其他目录。卸载即删除该目录。已在运行的服务需停止后从新安装路径重新启动。
 
 ### 原生 Codex（默认）
 
@@ -95,7 +106,7 @@ python plugins/latex-codex/scripts/editor.py /path/to/project/paper/main.tex --p
 
 同一启动命令也支持 UTF-8 `.md` / `.markdown`；默认在浏览器本地实时预览，不调用 TeX。支持常用 Markdown、代码块、表格、KaTeX 公式及 Obsidian `![[图片名.png]]` 引用；图片限于笔记目录或其 Obsidian 库内，实时预览允许 PNG/JPG/GIF/WebP/AVIF。点击“PDF 预览”使用本地 XeLaTeX，将笔记转换为行号对应的临时 TeX，跳过 YAML frontmatter，渲染 callout、双链显示文本和 TikZ 代码块，沿用 PDF 目录、SyncTeX 双向跳转、选字/框选批注、下载及历史 PDF 对比；点击“实时预览”切回 HTML。PDF 图片支持 PNG/JPG/PDF，其他格式显示提示；TikZ 需现有 TeX 环境提供相应包，缺少时不自动安装。打开和编译保留原笔记字节，转换文件和图片副本仅在构建目录中生成。自动保存、Vim/Emacs、搜索、源码批注、AI 修改和历史沿用现有流程；Markdown AI 修改不插入 TeX 颜色命令。HTML 渲染与定位在 `scripts/vendor/latex-markdown.{mjs,css}`，资源边界在 `scripts/markdown_source.py`；PDF 转换在 `scripts/obsidian_tex.py`，适配自用户提供的 LaTeX Sidecar 16.22.00。检查在 `test_markdown.py`、`test_markdown.mjs`、`test_markdown_pdf.py`、`test_highlight.cjs` 和 `test_ui.cjs`。
 
-打开终端打印的回环地址；AI 功能使用已登录的 GitHub Copilot CLI，无需 Codex 登录。完整操作说明见 `plugins/latex-codex/skills/latex-codex/SKILL.md`。
+打开终端打印的回环地址；AI 功能使用已登录的 GitHub Copilot CLI，无需 Codex 登录。完整操作说明见 `plugins/latex-codex/skills/latex-copilot/SKILL.md`。
 
 Copilot 适配在 `scripts/copilot_cli.py`：CLI 优先 `COPILOT_CLI_PATH`，其次 PATH。每次请求在空临时目录以 `copilot -C <临时目录> --output-format json --stream off --no-ask-user --no-custom-instructions --disable-builtin-mcps --disallow-temp-dir` 运行，提示词经 stdin 传入；不传 `--allow-all-tools`，提示模式下工具请求被拒绝。Copilot CLI 没有 `--output-schema`，所需 JSON Schema 写入提示词，取最后一条 `assistant.message`，按 Schema 校验后才应用；不合格式或 CLI 报错（stderr）显示错误并保留批注。模型列表读取 `copilot help config` 中 `model` 设置的目录；账号或组织不可用的模型、模型不支持的思考等级由 CLI 报错提示，选“跟随默认”可绕过。未选模型时不传思考等级。Copilot 后端不读取主对话上下文（`main_conversation` 恒为不可用）。页面以 `data-ai-backend="copilot"` 标记、标题为“LaTeX · GitHub Copilot”；Codex 原生浏览器批注依赖 Codex 应用注入的 `document.oai`，Copilot 后端与 DeepSeek 一样隐藏并禁用该入口（`vendor/latex-native-annotations.mjs`，检查在 `test_native_annotations.mjs`）。检查在 `test_chat.py`、`test_project_chat.py` 与 `test_overleaf_sync.py`。
 
