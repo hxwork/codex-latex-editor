@@ -8,6 +8,7 @@
 - **Send** 使用已登录的 GitHub Copilot CLI 生成修改建议，源码与 PDF 逐处 **Keep / Undo**。
 - 支持模型与思考等级选择、写作风格和项目对话。
 - Markdown 实时预览，以及通过现有 TeX 环境生成 PDF。
+- 与 Overleaf 双向同步：工具栏 **Overleaf · 拉取** 把 Overleaf 上的新修改合并到本地（保留未保存草稿，冲突先分析），**推送** 提交并推送到项目的 Overleaf Git 远程。
 
 对 Codex 说：**使用 latex-codex 打开 main.tex**，或直接运行：
 

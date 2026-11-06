@@ -34,7 +34,7 @@ from markdown_source import SOURCE_EXTENSIONS, document_type, markdown_resource
 from hot_reload import runtime_revision, validate_runtime, reload_blocked
 from project_tree import TEXT_EXTENSIONS, tree_snapshot, safe_path as tree_path, mutate as tree_mutate
 from obsidian_tex import convert as note_to_tex, find_vault_root
-from overleaf_sync import OverleafSync, destination
+from overleaf_sync import OverleafSync, destination, sync_status
 
 HISTORY_PDF_CACHE_BYTES = 256 * 1024 * 1024
 HISTORY_PDF_CACHE_DAYS = 30
@@ -118,6 +118,27 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 #compile{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:110px;padding:3px 10px;font-size:13px;background:#15803d;border-color:#22c55e;color:#fff;font-weight:600}#compile:hover:not(:disabled){background:#166534}#compile[aria-busy=true]{opacity:1;cursor:wait}
 #compile::before{content:'';display:none;width:14px;height:14px;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:compile-spin .8s linear infinite}#compile[aria-busy=true]::before{display:block}.compile-busy,#compile[aria-busy=true] .compile-idle{display:none}#compile[aria-busy=true] .compile-busy{display:inline}
 @keyframes compile-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#compile::before{animation:none}}
+.overleaf-sync,.overleaf-dialog{--overleaf:light-dark(#138a07,#62c370);--overleaf-strong:light-dark(#138a07,#2b8a3e)}
+.overleaf-sync{display:inline-flex;align-items:stretch;flex-shrink:0;border:1px solid var(--border);border-radius:999px;background:var(--bg);overflow:hidden}.overleaf-sync:focus-within,.overleaf-sync:hover{border-color:color-mix(in srgb,var(--overleaf) 60%,var(--border))}
+.overleaf-sync-brand{display:inline-flex;align-items:center;gap:5px;padding:0 9px 0 10px;border-right:1px solid var(--border);color:var(--overleaf);font-size:12px;font-weight:650;letter-spacing:.01em;user-select:none}.overleaf-sync-brand .toolbar-icon{width:15px;height:15px}
+#app-toolbar .overleaf-sync-button{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:0;border-radius:0;background:transparent;font-size:13px}#app-toolbar .overleaf-sync-button+.overleaf-sync-button{border-left:1px solid var(--border)}.overleaf-sync-button .toolbar-icon{width:15px;height:15px}.overleaf-sync-button:hover:not(:disabled){background:color-mix(in srgb,var(--overleaf) 12%,transparent);color:var(--overleaf)}.overleaf-sync-button:focus-visible{outline-offset:-3px}
+.overleaf-badge{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--overleaf-strong);color:#fff;font:650 11px/1 system-ui}.overleaf-badge[hidden]{display:none}#git-push-badge,#git-tab-push-badge{background:color-mix(in srgb,var(--text) 16%,transparent);color:var(--text)}
+.overleaf-dialog{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;padding:0;border:1px solid var(--border);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:0 24px 80px #0006}.overleaf-dialog::backdrop{background:#0007;backdrop-filter:blur(3px)}.overleaf-dialog form{display:flex;flex-direction:column;gap:14px;padding:20px 22px 18px}
+.ol-head{display:flex;align-items:center;gap:12px}.ol-logo{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--overleaf) 16%,transparent);color:var(--overleaf)}.ol-logo svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ol-head-text{flex:1;min-width:0}.ol-head h3{margin:0;font:600 17px system-ui}#git-summary{margin:3px 0 0;color:var(--muted);font:12px Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ol-close{flex:none;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:20px;line-height:1}.ol-close:hover:not(:disabled){background:var(--border);color:var(--text)}
+.ol-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ol-stat{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}.ol-stat-label{color:var(--muted);font-size:11px;letter-spacing:.05em;text-transform:uppercase}.ol-stat strong{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ol-stat small{min-height:1.4em;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ol-stat[data-tone=incoming]{border-color:color-mix(in srgb,var(--overleaf) 45%,var(--border))}.ol-stat[data-tone=incoming] strong,.ol-stat[data-tone=ok] strong{color:var(--overleaf)}.ol-stat[data-tone=error] strong{color:light-dark(#b42318,#f87171)}
+.ol-refresh{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--muted)}.ol-refresh .toolbar-icon{width:15px;height:15px}.ol-refresh:hover:not(:disabled){background:color-mix(in srgb,var(--overleaf) 12%,transparent);color:var(--overleaf)}.ol-refresh[data-busy=true] svg{animation:compile-spin .9s linear infinite}
+.ol-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}.ol-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 10px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:600}.ol-tabs button[aria-selected=true]{background:var(--panel);color:var(--text);box-shadow:0 1px 3px #0003,inset 0 0 0 1px var(--border)}.ol-tabs button[aria-selected=true] .toolbar-icon{color:var(--overleaf)}.ol-tabs button:hover:not(:disabled):not([aria-selected=true]){color:var(--text)}
+.ol-pane{display:flex;flex-direction:column;gap:8px}.ol-pane[hidden]{display:none}.ol-help{margin:0;color:var(--muted);font-size:13px;line-height:1.6}.ol-section-title{margin:2px 0 0;font:600 12px system-ui}
+.ol-list{margin:0;padding:4px;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg);list-style:none}.ol-list:empty{display:none}.ol-list li{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 6px;border-radius:6px;font-size:13px}.ol-list li:hover{background:color-mix(in srgb,var(--border) 45%,transparent)}.ol-list-compact{max-height:120px;margin-top:6px}
+.ol-file-status{display:inline-grid;place-items:center;flex:none;width:20px;height:20px;border-radius:5px;background:color-mix(in srgb,#d97706 18%,transparent);color:light-dark(#b45309,#fbbf24);font:700 11px/1 Consolas,monospace}.ol-file-status[data-status=A]{background:color-mix(in srgb,#16a34a 18%,transparent);color:light-dark(#15803d,#4ade80)}.ol-file-status[data-status=D]{background:color-mix(in srgb,#dc2626 18%,transparent);color:light-dark(#b91c1c,#f87171)}.ol-file-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:12.5px Consolas,monospace}
+.ol-commit-hash{flex:none;padding:2px 6px;border-radius:5px;background:color-mix(in srgb,var(--border) 60%,transparent);color:var(--muted);font:11px Consolas,monospace}.ol-commit-text{display:flex;flex-direction:column;flex:1;min-width:0}.ol-commit-text span,.ol-commit-text small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ol-commit-text small{color:var(--muted);font-size:11px}
+.ol-empty{margin:0;padding:14px;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;text-align:center}.ol-empty:empty,.ol-empty[hidden]{display:none}.ol-note{margin:0;color:var(--muted);font-size:12px;line-height:1.5}.ol-note:empty{display:none}.overleaf-dialog details.ol-note{padding:0;background:transparent}.overleaf-dialog details.ol-note summary{cursor:pointer}
+.overleaf-dialog .ol-label{display:block;padding:6px 0 0;color:var(--text);font-size:12px;font-weight:600;white-space:normal}#git-message{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}#git-message:focus{border-color:var(--overleaf);outline:2px solid color-mix(in srgb,var(--overleaf) 35%,transparent)}
+.ol-progress{display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid color-mix(in srgb,var(--overleaf) 35%,var(--border));border-radius:10px;background:color-mix(in srgb,var(--overleaf) 9%,var(--bg));font-size:13px}.ol-progress[hidden]{display:none}.ol-progress[data-state=running]::before{content:'';flex:none;width:14px;height:14px;border:2px solid color-mix(in srgb,var(--overleaf) 30%,transparent);border-top-color:var(--overleaf);border-radius:50%;animation:compile-spin .8s linear infinite}
+.ol-error{margin:0;color:light-dark(#b42318,#f87171);font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.ol-error:empty{display:none}.ol-error:not(:empty){padding:10px 12px;border:1px solid color-mix(in srgb,#ef4444 40%,var(--border));border-radius:10px;background:color-mix(in srgb,#ef4444 9%,var(--bg))}
+.ol-actions{display:flex;align-items:center;gap:8px;padding-top:2px}.ol-spacer{flex:1}.ol-primary{border-color:var(--overleaf-strong);background:var(--overleaf-strong);color:#fff;font-weight:600}.ol-primary:hover:not(:disabled){border-color:var(--overleaf-strong);filter:brightness(1.1)}#git-discard{color:light-dark(#b42318,#f87171)}#git-discard[hidden]{display:none}
+#git-conflicts:empty{display:none}#git-conflicts .ol-warning{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,#d97706 12%,var(--bg));color:light-dark(#92400e,#fbbf24);font-size:12px}#git-conflicts section{margin:0 0 10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}#git-conflicts h4{margin:0 0 8px;font:600 13px Consolas,monospace}#git-conflicts details{margin:0 0 8px;padding:8px 10px;border-left:3px solid #d97706;border-radius:8px;background:var(--panel)}#git-conflicts details[data-severity=critical]{border-left-color:#dc2626}#git-conflicts details[data-severity=minor]{border-left-color:#16a34a}#git-conflicts summary{cursor:pointer;font-size:12.5px;font-weight:600}#git-conflicts details p{margin:6px 0;color:var(--muted);font-size:12.5px;line-height:1.55}#git-conflicts pre{margin:4px 0 0;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font:12px/1.5 Consolas,monospace}#git-conflicts strong{font-size:12px}#git-conflicts label{display:block;padding:8px 0 4px;white-space:normal}#git-conflicts select{margin-bottom:6px}#git-conflicts textarea{padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)}
+@media(max-width:560px){.ol-status{grid-template-columns:1fr}.ol-tabs button span[data-i18n]{font-size:12px}}@media(prefers-reduced-motion:reduce){.ol-refresh[data-busy=true] svg,.ol-progress[data-state=running]::before{animation:none}}
 #log-toggle,#open-folder{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;padding:4px}#open-folder{margin-right:auto}#log-toggle[aria-pressed=true]{background:var(--border);color:var(--command)}.pdf-toolbar[data-log-view=true] :is(#pan-mode,#pan-hint,#zoom-fit){display:none}
 .preview-shell{position:relative;flex:1;min-height:0}#preview{position:absolute;inset:0;overflow:auto;background:var(--panel)}
 #preview.hand-tool{cursor:grab;user-select:none}#preview.hand-tool .textLayer{pointer-events:none}#preview.dragging{cursor:grabbing}#preview.zoom-tool{cursor:zoom-in}#preview.zoom-tool.zoom-out{cursor:zoom-out}
@@ -166,9 +187,16 @@ main>section{min-width:0;min-height:0;display:flex;flex-direction:column;backgro
 <header id="app-toolbar"><button id="file-menu-button" class="icon-button" aria-label="文件" data-i18n-aria-label="文件" title="文件" data-i18n-title="文件" popovertarget="file-menu" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H5v20h14V7zM14 2v6h5"/></svg></button><button id="file-tree-toggle" class="icon-button" aria-label="展开项目文件树" title="项目文件树" aria-expanded="false" aria-controls="file-tree-panel" data-i18n-title="项目文件树" data-i18n-aria-label="展开项目文件树"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM9 3v18M12 8h6M12 12h6M12 16h6"/></svg></button><button id="native-annotation-open" class="icon-button" disabled aria-pressed="false" aria-label="原生批注选区" data-i18n-aria-label="原生批注选区" title="原生批注选区" data-i18n-title="原生批注选区"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg></button><span id="status" role="status" aria-live="polite" data-i18n="正在打开…">正在打开…</span>
 <span id="native-annotation-status" hidden role="status" aria-live="polite"><span data-i18n="按 Esc 返回编辑">按 Esc 返回编辑</span><span class="native-annotation-feedback" data-i18n="已保存批注可在主对话统一发送。" style="margin-left:8px">已保存批注可在主对话统一发送。</span></span>
 <button id="annotations-toggle" hidden popovertarget="annotations-review" aria-expanded="false">批注 · 0</button><button id="annotations-stop" hidden data-i18n="停止">停止</button><button id="annotations-send" hidden disabled aria-busy="false" title="发送全部批注" data-i18n-title="发送全部批注">Send</button>
-<button id="project-review-open" popovertarget="project-review-menu" hidden></button><button id="git-open" disabled data-i18n="同步到 Overleaf">同步到 Overleaf</button><button id="history-open" class="icon-button" disabled><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2"/></svg><span data-i18n="历史">历史</span></button><button id="settings-menu-button" class="icon-button" popovertarget="settings-menu" aria-label="设置" data-i18n-aria-label="设置" title="设置" data-i18n-title="设置" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></header>
+<button id="project-review-open" popovertarget="project-review-menu" hidden></button><div id="overleaf-sync" class="overleaf-sync" role="group" aria-label="Overleaf" title="Overleaf"><span class="overleaf-sync-brand" aria-hidden="true"><svg class="toolbar-icon overleaf-leaf" viewBox="0 0 24 24"><path d="M4.5 19.5c0-8.5 5.5-14 15-15-.6 9.6-6.2 15-15 15zM4.5 19.5l7.5-7.5"/></svg><span>Overleaf</span></span><button id="git-pull-open" class="overleaf-sync-button" disabled title="从 Overleaf 更新" data-i18n-title="从 Overleaf 更新" aria-label="从 Overleaf 更新" data-i18n-aria-label="从 Overleaf 更新"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span data-i18n="拉取">拉取</span><span id="git-pull-badge" class="overleaf-badge" hidden></span></button><button id="git-open" class="overleaf-sync-button" disabled title="同步到 Overleaf" data-i18n-title="同步到 Overleaf" aria-label="同步到 Overleaf" data-i18n-aria-label="同步到 Overleaf"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9M7 13.5l5-5 5 5M5 4h14"/></svg><span data-i18n="推送">推送</span><span id="git-push-badge" class="overleaf-badge" hidden></span></button></div><button id="history-open" class="icon-button" disabled><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2"/></svg><span data-i18n="历史">历史</span></button><button id="settings-menu-button" class="icon-button" popovertarget="settings-menu" aria-label="设置" data-i18n-aria-label="设置" title="设置" data-i18n-title="设置" aria-expanded="false"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3-1 2v3l1 2-2 3-2-.2-2 1-1 3h-4l-1-3-2-1-2 .2-2-3 1-2V9L3 7l2-3 2 .2z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></svg></button></header>
 <div id="file-menu" class="toolbar-menu" popover="auto" aria-label="文件" data-i18n-aria-label="文件"><button id="open" data-i18n="打开文件">打开文件</button><button id="project-open" data-i18n="项目设置">项目设置</button><button id="reload" data-i18n="重新读取文件">重新读取文件</button><a href="/pdf" download="document.pdf" data-i18n="下载 PDF">下载 PDF</a></div>
-<dialog id="git-dialog" aria-labelledby="git-title" style="width:min(960px,90vw);max-height:90vh;overflow:auto"><h3 id="git-title" data-i18n="同步到 Overleaf">同步到 Overleaf</h3><p id="git-summary"></p><pre id="git-files" style="max-height:180px;overflow:auto;white-space:pre-wrap"></pre><p id="git-excluded"></p><form id="git-form"><label for="git-message" data-i18n="提交说明">提交说明</label><input id="git-message" required maxlength="2000" value="Update paper" style="width:100%;box-sizing:border-box"><p data-i18n="自动获取远程更新、合并并推送；遇到冲突会先分析。">自动获取远程更新、合并并推送；遇到冲突会先分析。</p><p id="git-progress" role="status" aria-live="polite"></p><div id="git-conflicts"></div><p id="git-error" role="alert"></p><button id="git-discard" type="button" hidden data-i18n="放弃本次合并，重新检查">放弃本次合并，重新检查</button><div class="history-dialog-actions"><button id="git-cancel" type="button" data-i18n="取消">取消</button><button id="git-submit" type="submit" data-i18n="同步到 Overleaf">同步到 Overleaf</button></div></form></dialog>
+<dialog id="git-dialog" class="overleaf-dialog" data-direction="push" aria-labelledby="git-title"><form id="git-form">
+<div class="ol-head"><span class="ol-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5c0-8.5 5.5-14 15-15-.6 9.6-6.2 15-15 15zM4.5 19.5l7.5-7.5"/></svg></span><div class="ol-head-text"><h3 id="git-title" data-i18n="Overleaf 同步">Overleaf 同步</h3><p id="git-summary"></p></div><button id="git-close" type="button" class="ol-close" aria-label="关闭" data-i18n-aria-label="关闭" title="关闭" data-i18n-title="关闭">×</button></div>
+<div class="ol-status" aria-live="polite"><div class="ol-stat"><span class="ol-stat-label" data-i18n="本地">本地</span><strong id="git-stat-local">—</strong><small id="git-stat-local-detail"></small></div><div id="git-stat-remote-card" class="ol-stat"><span class="ol-stat-label">Overleaf</span><strong id="git-stat-remote">—</strong><small id="git-stat-remote-detail"></small><button id="git-refresh" type="button" class="ol-refresh" data-busy="false" aria-label="检查 Overleaf 更新" data-i18n-aria-label="检查 Overleaf 更新" title="检查 Overleaf 更新" data-i18n-title="检查 Overleaf 更新"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 3.5V8h4.5M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20.5V16h-4.5"/></svg></button></div><div class="ol-stat"><span class="ol-stat-label" data-i18n="上次同步">上次同步</span><strong id="git-stat-last">—</strong><small id="git-stat-last-detail"></small></div></div>
+<div class="ol-tabs" role="tablist" aria-label="Overleaf"><button id="git-tab-pull" type="button" role="tab" aria-selected="false" aria-controls="git-pane-pull" tabindex="-1"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span data-i18n="从 Overleaf 更新">从 Overleaf 更新</span><span id="git-tab-pull-badge" class="overleaf-badge" hidden></span></button><button id="git-tab-push" type="button" role="tab" aria-selected="true" aria-controls="git-pane-push"><svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9M7 13.5l5-5 5 5M5 4h14"/></svg><span data-i18n="同步到 Overleaf">同步到 Overleaf</span><span id="git-tab-push-badge" class="overleaf-badge" hidden></span></button></div>
+<section id="git-pane-pull" class="ol-pane" role="tabpanel" aria-labelledby="git-tab-pull" hidden><p class="ol-help" data-i18n="获取 Overleaf 上的新修改并合并到本地文稿。本地草稿保留为未提交修改；遇到冲突会先分析，写入前保存本地历史，不会推送。">获取 Overleaf 上的新修改并合并到本地文稿。本地草稿保留为未提交修改；遇到冲突会先分析，写入前保存本地历史，不会推送。</p><h4 class="ol-section-title" data-i18n="Overleaf 上的新提交">Overleaf 上的新提交</h4><ul id="git-incoming" class="ol-list"></ul><p id="git-incoming-empty" class="ol-empty"></p><p id="git-incoming-files" class="ol-note"></p></section>
+<section id="git-pane-push" class="ol-pane" role="tabpanel" aria-labelledby="git-tab-push"><p class="ol-help" data-i18n="自动获取远程更新、合并并推送；遇到冲突会先分析。">自动获取远程更新、合并并推送；遇到冲突会先分析。</p><h4 class="ol-section-title" data-i18n="待提交文件">待提交文件</h4><ul id="git-files" class="ol-list"></ul><p id="git-files-empty" class="ol-empty" data-i18n="没有新草稿；仍可同步远程或已提交的本地修改。" hidden>没有新草稿；仍可同步远程或已提交的本地修改。</p><details id="git-excluded-details" class="ol-note"><summary id="git-excluded"></summary><ul id="git-excluded-list" class="ol-list ol-list-compact"></ul></details><label for="git-message" class="ol-label" data-i18n="提交说明">提交说明</label><input id="git-message" required maxlength="2000" value="Update paper"></section>
+<p id="git-progress" class="ol-progress" role="status" aria-live="polite" hidden></p><div id="git-conflicts"></div><p id="git-error" class="ol-error" role="alert"></p>
+<div class="ol-actions"><button id="git-discard" type="button" hidden data-i18n="放弃本次合并，重新检查">放弃本次合并，重新检查</button><span class="ol-spacer"></span><button id="git-cancel" type="button" data-i18n="取消">取消</button><button id="git-submit" type="submit" class="ol-primary" data-i18n="同步到 Overleaf">同步到 Overleaf</button></div></form></dialog>
 <dialog id="project-dialog" aria-labelledby="project-title"><h3 id="project-title" data-i18n="项目设置">项目设置</h3><form id="project-form"><label for="project-root" data-i18n="项目根目录">项目根目录</label><input id="project-root" required><label for="project-entry" data-i18n="主编译文件">主编译文件</label><input id="project-entry" required placeholder="main.tex"><p data-i18n="选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。">选择包含主文件和附录的文件夹。主编译文件可填写相对路径；切换源码始终编译此文件。</p><p id="project-error" role="alert"></p><div class="history-dialog-actions"><button id="project-cancel" type="button" data-i18n="取消">取消</button><button id="project-apply" type="submit" data-i18n="应用">应用</button></div></form></dialog>
 <dialog id="main-file-dialog" class="history-small-dialog" aria-labelledby="main-file-title">
 <form method="dialog"><h3 id="main-file-title" data-i18n="选择主编译文件">选择主编译文件</h3>
@@ -624,7 +652,7 @@ function showCompileError(error){
   // Diagnostics highlight the active source without interrupting editing or navigation.
   setText(status,'编译失败 · 第 {line} 行：{message}',error);
 }
-function updateSyncControls(){updateAcceptAll();const disabled=busy||syncBusy||editor.getOption('readOnly');texEngine.disabled=!!disabled||documentType==='markdown';forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;}
+function updateSyncControls(){updateAcceptAll();const disabled=busy||syncBusy||editor.getOption('readOnly');texEngine.disabled=!!disabled||documentType==='markdown';forwardButton.disabled=disabled||!!proofreadPdf?.active;compileButton.disabled=disabled;openButton.disabled=busy||syncBusy;sourcePicker.setDisabled(!!disabled);document.querySelector('#project-open').disabled=!!disabled;document.querySelector('#history-open').disabled=!!disabled;document.querySelector('#git-open').disabled=!!disabled||conflict;document.querySelector('#git-pull-open').disabled=!!disabled||conflict;}
 proofreadPdf=attachProofreadPdf({request,
   capture:()=>({latex:documentType==='latex',enabled:preferences.getItem('latex-codex-proofread-pdf')!=='off',path:document.querySelector('#filename').title,version,source:editor.getValue(),doc:editor.getDoc(),range:(from,to)=>editor.getRange(from,to),index:pos=>editor.indexFromPos(pos)}),
   display:async(data,current)=>{const displayed=await refreshPreview(data,current);if(displayed!==false&&current()){pdfVersion='';compiledLabels={};compiledCitations={};showCompileLog(false);updateSyncControls();selectionChat.refreshAnnotations();}return displayed;},
@@ -745,20 +773,114 @@ document.querySelector('#project-form').onsubmit=async event=>{
   if(!projectDialog.open)await compile();
 };
 const gitDialog=document.querySelector('#git-dialog');
-let gitSnapshot=null,gitJob=null,gitResolutionRows=[];
+let gitSnapshot=null,gitJob=null,gitResolutionRows=[],gitDirection='push',gitStatus=null,gitStatusError='',overleafChecking=null,overleafCheckedAt=0,overleafUnavailable=false;
 const gitDiscard=document.querySelector('#git-discard');
-gitDiscard.onclick=async()=>{if(busy||!gitJob)return;try{await request('/git/discard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:gitJob.id})});gitDialog.close();await document.querySelector('#git-open').onclick();}catch(error){gitError.textContent=error.message;}};
 const gitError=document.querySelector('#git-error'),gitProgress=document.querySelector('#git-progress');
+const gitSubmit=document.querySelector('#git-submit'),gitMessage=document.querySelector('#git-message');
+gitDiscard.onclick=async()=>{if(busy||!gitJob)return;const direction=gitDirection;try{await request('/git/discard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:gitJob.id})});gitJob=null;gitDialog.close();await openGitDialog(direction);}catch(error){gitError.textContent=error.message;}};
 document.querySelector('#git-cancel').onclick=()=>gitDialog.close();
+document.querySelector('#git-close').onclick=()=>{if(!busy)gitDialog.close();};
 gitDialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
+function relativeTime(value){
+  const time=Date.parse(value||'');if(!Number.isFinite(time))return '';
+  const minutes=Math.max(0,Math.round((Date.now()-time)/60000));
+  if(minutes<1)return t('刚刚');
+  if(minutes<60)return t('{count} 分钟前',{count:minutes});
+  const hours=Math.round(minutes/60);
+  return hours<24?t('{count} 小时前',{count:hours}):t('{count} 天前',{count:Math.round(hours/24)});
+}
+function setGitBadge(badge,count,label){badge.hidden=!count;badge.textContent=count?String(count):'';badge.title=count?label:'';}
+function gitStat(name,value,detail='',tone=''){
+  document.querySelector('#git-stat-'+name).textContent=value;
+  const small=document.querySelector('#git-stat-'+name+'-detail');small.textContent=detail;small.title=detail;
+  if(name==='remote')document.querySelector('#git-stat-remote-card').dataset.tone=tone;
+}
+function gitListItem(code,text){
+  const item=document.createElement('li'),badge=document.createElement('span'),name=document.createElement('span');
+  badge.className='ol-file-status';badge.dataset.status=code;badge.textContent=code;
+  name.className='ol-file-name';name.textContent=text;name.title=text;item.append(badge,name);return item;
+}
+function gitFileCode(status){const value=String(status||'').trim();return value==='??'?'A':(value[0]||'M');}
+function renderOverleafStatus(){
+  const state=gitStatus||{},behind=state.behind||0,ahead=state.ahead||0,last=state.last||{},files=gitSnapshot?.files?.length||0;
+  setGitBadge(document.querySelector('#git-pull-badge'),behind,t('Overleaf 有 {count} 个新提交',{count:behind}));
+  setGitBadge(document.querySelector('#git-push-badge'),ahead,t('{count} 个本地提交尚未推送',{count:ahead}));
+  setGitBadge(document.querySelector('#git-tab-pull-badge'),behind,t('Overleaf 有 {count} 个新提交',{count:behind}));
+  setGitBadge(document.querySelector('#git-tab-push-badge'),files+ahead,t('{count} 个待提交文件',{count:files}));
+  const recent=['push','pull'].filter(kind=>last[kind]?.time).sort((a,b)=>Date.parse(last[b].time)-Date.parse(last[a].time))[0];
+  document.querySelector('#overleaf-sync').title=recent?t('Overleaf · 上次同步 {time}',{time:relativeTime(last[recent].time)}):'Overleaf';
+  if(!gitDialog.open)return;
+  gitStat('local',t('{count} 个待提交文件',{count:files}),ahead?t('{count} 个本地提交尚未推送',{count:ahead}):t('分支 {branch}',{branch:state.branch||gitSnapshot?.branch||''}));
+  const checked=last.check?.time?t('检查于 {time}',{time:relativeTime(last.check.time)}):'';
+  if(overleafChecking)gitStat('remote',t('正在检查…'),checked);
+  else if(gitStatusError)gitStat('remote',t('检查失败'),gitStatusError,'error');
+  else if(state.behind==null)gitStat('remote',t('尚未检查'),checked);
+  else if(behind)gitStat('remote',t('{count} 个新提交',{count:behind}),checked,'incoming');
+  else gitStat('remote',t('已是最新'),checked,'ok');
+  gitStat('last',recent?relativeTime(last[recent].time):t('从未同步'),
+    [last.pull?.time?t('拉取 · {time}',{time:relativeTime(last.pull.time)}):'',last.push?.time?t('推送 · {time}',{time:relativeTime(last.push.time)}):''].filter(Boolean).join(' · '));
+  const incoming=document.querySelector('#git-incoming');
+  incoming.replaceChildren(...(state.incoming||[]).map(entry=>{
+    const item=document.createElement('li'),hash=document.createElement('span'),text=document.createElement('span'),subject=document.createElement('span'),meta=document.createElement('small');
+    hash.className='ol-commit-hash';hash.textContent=entry.commit;text.className='ol-commit-text';
+    subject.textContent=entry.subject||entry.commit;subject.title=entry.subject||'';
+    meta.textContent=[entry.author,relativeTime(entry.time)].filter(Boolean).join(' · ');
+    text.append(subject,meta);item.append(hash,text);return item;
+  }));
+  document.querySelector('#git-incoming-empty').textContent=overleafChecking?t('正在检查…'):state.behind===0?t('Overleaf 上没有新的修改。'):state.behind==null&&!gitStatusError?t('尚未检查'):'';
+  const changed=state.incoming_files||[];
+  document.querySelector('#git-incoming-files').textContent=changed.length?t('涉及 {count} 个文件：',{count:changed.length})+' '+changed.slice(0,12).map(file=>file.path).join(', ')+(changed.length>12?' …':''):'';
+}
+function refreshOverleafStatus(fetchRemote=false){
+  if(overleafChecking)return overleafChecking;
+  const refresh=document.querySelector('#git-refresh');
+  overleafChecking=(async()=>{
+    refresh.dataset.busy=String(fetchRemote);refresh.disabled=true;
+    try{
+      const data=await request('/git/status'+(fetchRemote?'?fetch=1':''));
+      if(data&&typeof data==='object'){gitStatus={...gitStatus,...data};overleafUnavailable=false;if(data.fetched){overleafCheckedAt=Date.now();gitStatusError='';}}
+    }catch(error){gitStatusError=error.message;if(!gitDialog.open)overleafUnavailable=true;}
+  })().finally(()=>{overleafChecking=null;refresh.dataset.busy='false';refresh.disabled=false;renderOverleafStatus();});
+  renderOverleafStatus();
+  return overleafChecking;
+}
+document.querySelector('#git-refresh').onclick=()=>{if(!busy&&gitJob?.status!=='conflicts')refreshOverleafStatus(true);};
+window.addEventListener('latex-language-change',()=>{renderOverleafStatus();if(gitSnapshot)renderGitFiles();});
+function updateGitSubmit(){
+  const pull=gitDirection==='pull';
+  setText(gitSubmit,gitJob?.status==='conflicts'?(pull?'应用所选合并':'应用所选合并并推送'):(pull?'从 Overleaf 更新':'同步到 Overleaf'));
+}
+function setGitTabsDisabled(value){for(const name of ['pull','push'])document.querySelector('#git-tab-'+name).disabled=!!value;}
+function setGitDirection(direction){
+  gitDirection=direction==='pull'?'pull':'push';gitDialog.dataset.direction=gitDirection;
+  for(const name of ['pull','push']){
+    const active=name===gitDirection,tab=document.querySelector('#git-tab-'+name);
+    tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;document.querySelector('#git-pane-'+name).hidden=!active;
+  }
+  gitMessage.required=gitDirection==='push';updateGitSubmit();
+}
+for(const name of ['pull','push']){
+  const tab=document.querySelector('#git-tab-'+name);
+  tab.onclick=()=>{if(!busy&&!['running','conflicts'].includes(gitJob?.status)){gitError.textContent='';setGitDirection(name);}};
+  tab.onkeydown=event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();const other=document.querySelector('#git-tab-'+(name==='pull'?'push':'pull'));other.onclick();other.focus();}};
+}
+function setGitProgress(text,running=false){gitProgress.textContent=text?t(text):'';gitProgress.dataset.state=running?'running':'idle';gitProgress.hidden=!text;}
+function renderGitFiles(){
+  const files=gitSnapshot?.files||[],excluded=gitSnapshot?.excluded||[];
+  document.querySelector('#git-files').replaceChildren(...files.map(file=>gitListItem(gitFileCode(file.status),file.path)));
+  document.querySelector('#git-files-empty').hidden=files.length>0;
+  document.querySelector('#git-excluded').textContent=t('已排除编译产物、本地缓存及无关文件：{count} 个文件',{count:excluded.length});
+  document.querySelector('#git-excluded-details').hidden=!excluded.length;
+  document.querySelector('#git-excluded-list').replaceChildren(...excluded.slice(0,200).map(name=>gitListItem('–',name)));
+}
 function renderGitConflicts(data){
   const area=document.querySelector('#git-conflicts');area.replaceChildren();gitResolutionRows=[];
-  if(data.analysis_warning){const warning=document.createElement('p');warning.textContent=data.analysis_warning;area.append(warning);}
+  if(data.analysis_warning){const warning=document.createElement('p');warning.className='ol-warning';warning.textContent=t(data.analysis_warning);area.append(warning);}
   for(const file of data.files||[]){
-    const panel=document.createElement('section');panel.style.cssText='border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0';
+    const panel=document.createElement('section');
     const heading=document.createElement('h4');heading.textContent=file.path;panel.append(heading);
     for(const item of (data.conflicts||[]).filter(item=>item.path===file.path)){
-      const analysis=item.analysis||{},detail=document.createElement('details');detail.open=true;
+      const analysis=item.analysis||{},detail=document.createElement('details');detail.open=true;detail.dataset.severity=analysis.severity||'uncertain';
       const label=document.createElement('summary');
       const severity=t({minor:'次要',critical:'关键',uncertain:'待核对'}[analysis.severity]||'待核对');
       label.textContent=t('#{id} · 合并稿第 {line} 行 · {severity} · {method} · 置信度 {confidence}',{id:item.id,line:item.line,severity,method:t(analysis.method==='codex'?'Copilot 语义分析':'保守初判'),confidence:analysis.confidence||'low'});
@@ -784,61 +906,77 @@ function renderGitConflicts(data){
 async function followGitJob(id){
   for(;;){
     const data=await request('/git/job?id='+encodeURIComponent(id));gitJob=data;
-    gitProgress.textContent=data.phase||'';
+    if(data.direction&&data.direction!==gitDirection)setGitDirection(data.direction);
+    setGitProgress(data.phase||'',data.status==='running');
     if(data.status==='running'){await new Promise(resolve=>setTimeout(resolve,700));continue;}
-    if(data.status==='conflicts'){gitDiscard.hidden=false;renderGitConflicts(data);setText(document.querySelector('#git-submit'),'应用所选合并并推送');return;}
-    if(data.status==='error')throw new Error(data.error||data.phase);
+    if(data.status==='conflicts'){gitDiscard.hidden=false;renderGitConflicts(data);updateGitSubmit();return data;}
+    if(data.status==='error')throw new Error(t(data.error||data.phase));
     if(data.status==='done'){
       gitDialog.close();
       // Remote content may have changed the active source; adopt it after the transaction completes.
       try{
         const state=await request('/state');
         if(state.source.replace(/\r\n/g,'\n')!==editor.getValue()||state.path!==document.querySelector('#filename').title)display(state,true);
-        else{version=state.version;projectVersion=state.project_version||projectVersion;mainSource=state.main_source||'';mathHover.setMainSource(mainSource);updateSourcePicker({files:state.files||[],path:state.path,main_file:mainFile});}
+        else{version=state.version;projectVersion=state.project_version||projectVersion;mainSource=state.main_source||'';mathHover.setMainSource(mainSource);updateSourcePicker({files:state.files||[],path:state.path,main_file:mainFile});projectTree.refresh();}
         if(!state.sync){pdfVersion='';compiledLabels={};compiledCitations={};}
-      }catch(error){setText(status,'Overleaf 已同步；请重新打开当前源码：{message}',{message:error.message});return;}
-      setText(status,'Overleaf · {commit} · 已同步',{commit:data.commit});return;
+      }catch(error){setText(status,'Overleaf 已同步；请重新打开当前源码：{message}',{message:error.message});return data;}
+      if(data.direction==='pull')setText(status,data.up_to_date?'Overleaf · 已是最新':'Overleaf · {commit} · 已更新 {count} 个文件',{commit:data.commit,count:(data.changed||[]).length});
+      else setText(status,'Overleaf · {commit} · 已同步',{commit:data.commit});
+      refreshOverleafStatus();
+      return data;
     }
     throw new Error(t('同步任务状态无效。'));
   }
 }
-document.querySelector('#git-open').onclick=async()=>{
+async function openGitDialog(direction='push'){
   if(busy||syncBusy||conflict||selectionChat.busy)return;
   if(selectionChat.hasAnnotations){setText(status,'请先处理未完成批注，再同步远程修改。');return;}
   if(editor.getValue()!==saved)await compile(false);
   if(busy||conflict||editor.getValue()!==saved)return;
   clearTimeout(timer);busy=true;updateSyncControls();
   try{
-    gitSnapshot=await request('/git');gitJob=null;gitResolutionRows=[];gitDiscard.hidden=true;
-    document.querySelector('#git-summary').textContent=t('{branch} · {count} 个待提交文件',{branch:gitSnapshot.branch,count:gitSnapshot.files.length})+' · Overleaf /'+(gitSnapshot.target?.project||'');
-    document.querySelector('#git-files').textContent=gitSnapshot.files.map(file=>file.status+' '+file.path).join('\n')||t('没有新草稿；仍可同步远程或已提交的本地修改。');
-    document.querySelector('#git-excluded').textContent=t('已排除编译产物、本地缓存及无关文件：{count} 个文件',{count:gitSnapshot.excluded.length});
-    gitError.textContent='';gitProgress.textContent='';document.querySelector('#git-conflicts').replaceChildren();
-    const button=document.querySelector('#git-submit');button.disabled=false;button.textContent=t('同步到 Overleaf');
-    gitDialog.showModal();
+    gitSnapshot=await request('/git');gitJob=null;gitResolutionRows=[];gitDiscard.hidden=true;gitStatusError='';
+    if(gitSnapshot.status)gitStatus={...gitStatus,...gitSnapshot.status};
+    document.querySelector('#git-summary').textContent=(gitSnapshot.branch||'')+' → Overleaf /'+(gitSnapshot.target?.project||'');
+    renderGitFiles();
+    gitError.textContent='';setGitProgress('');document.querySelector('#git-conflicts').replaceChildren();
+    gitSubmit.disabled=false;setGitTabsDisabled(false);setGitDirection(direction);
+    gitDialog.showModal();renderOverleafStatus();
     if(gitSnapshot.job&&['running','conflicts'].includes(gitSnapshot.job.status)){
-      editor.setOption('readOnly',true);button.disabled=true;document.querySelector('#git-cancel').disabled=true;
+      setGitDirection(gitSnapshot.job.direction||'push');
+      editor.setOption('readOnly',true);gitSubmit.disabled=true;setGitTabsDisabled(true);document.querySelector('#git-cancel').disabled=true;
       await followGitJob(gitSnapshot.job.id);
-    }
+    }else refreshOverleafStatus(true);
   }catch(error){gitError.textContent=error.message;setText(status,'Git: {message}',{message:error.message});}
-  finally{busy=false;editor.setOption('readOnly',false);document.querySelector('#git-submit').disabled=gitJob?.status==='error';document.querySelector('#git-cancel').disabled=false;updateSyncControls();}
-};
+  finally{busy=false;editor.setOption('readOnly',false);gitSubmit.disabled=gitJob?.status==='error';setGitTabsDisabled(gitJob?.status==='conflicts');document.querySelector('#git-cancel').disabled=false;updateSyncControls();}
+}
+document.querySelector('#git-open').onclick=()=>openGitDialog('push');
+document.querySelector('#git-pull-open').onclick=()=>openGitDialog('pull');
 document.querySelector('#git-form').onsubmit=async event=>{
   event.preventDefault();if(busy||syncBusy||conflict||!gitSnapshot)return;
-  const button=document.querySelector('#git-submit'),cancel=document.querySelector('#git-cancel');
-  clearTimeout(timer);busy=true;editor.setOption('readOnly',true);button.disabled=true;cancel.disabled=true;gitDiscard.disabled=true;updateSyncControls();gitError.textContent='';
+  const cancel=document.querySelector('#git-cancel');
+  clearTimeout(timer);busy=true;editor.setOption('readOnly',true);gitSubmit.disabled=true;cancel.disabled=true;gitDiscard.disabled=true;setGitTabsDisabled(true);updateSyncControls();gitError.textContent='';
+  let result=null;
   try{
     if(editor.getValue()!==saved)throw new Error(t('草稿已变化，请关闭并重新打开 Git 提交。'));
+    // A remote check holds the fetch lock; wait for it instead of failing the sync request.
+    if(overleafChecking)await overleafChecking;
     let job;
     if(gitJob?.status==='conflicts'){
       const resolutions=gitResolutionRows.map(row=>({path:row.path,choice:row.choice.value,source:row.source.value}));
       job=await request('/git/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:gitJob.id,resolutions})});
     }else{
-      job=await request('/git/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signature:gitSnapshot.signature,message:document.querySelector('#git-message').value,path:document.querySelector('#filename').title,version,source:saved})});
+      job=await request('/git/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({direction:gitDirection,signature:gitSnapshot.signature,message:gitMessage.value,path:document.querySelector('#filename').title,version,source:saved})});
     }
-    await followGitJob(job.id);
-  }catch(error){gitError.textContent=error.message;}
-  finally{busy=false;editor.setOption('readOnly',false);button.disabled=gitJob?.status==='error';cancel.disabled=false;gitDiscard.disabled=false;updateSyncControls();if(!conflict&&autoCompile.checked&&pdfVersion!==version)scheduleSave();}
+    setGitProgress('正在获取 Overleaf 最新版本…',true);
+    result=await followGitJob(job.id);
+  }catch(error){gitError.textContent=error.message;setGitProgress('');}
+  finally{
+    busy=false;editor.setOption('readOnly',false);gitSubmit.disabled=gitJob?.status==='error';cancel.disabled=false;gitDiscard.disabled=false;setGitTabsDisabled(gitJob?.status==='conflicts');updateSyncControls();
+    // Pulled content replaces the compiled document, so rebuild the PDF instead of waiting for autosave.
+    if(!conflict&&result?.status==='done'&&result.direction==='pull'&&result.changed?.length)await compile();
+    else if(!conflict&&autoCompile.checked&&pdfVersion!==version)scheduleSave();
+  }
 };
 
 async function clearPreview(){endSpacePan();pdfOutline.clear();pdfViewer.setDocument(null);pdfLinks.setDocument(null);if(pdfTask)await pdfTask.destroy();pdfTask=null;pdfBuild='';log.textContent='';}
@@ -1725,8 +1863,10 @@ openButton.onclick=openFile;
 document.querySelector('#reload').onclick=()=>load(true);
 window.addEventListener('beforeunload',e=>{if(editor.getValue()!==saved||busy){e.preventDefault();e.returnValue='';}});
 setInterval(()=>{if(!conflict)load();},2000);
+// Check Overleaf for new commits once after opening, then every ten minutes while the page is visible.
+setInterval(()=>{if(!overleafUnavailable&&!busy&&!gitDialog.open&&document.visibilityState!=='hidden'&&Date.now()-overleafCheckedAt>600000)refreshOverleafStatus(true);},60000);
 let runtimeLoading=true;
-load().finally(()=>{runtimeLoading=false;});
+load().finally(()=>{runtimeLoading=false;refreshOverleafStatus(true);});
 mountRuntimeReload({request,ready:()=>!!version&&!runtimeLoading,
   blocked:()=>busy||syncBusy||loading||conflict||editor.getValue()!==saved||projectReview.busy||historyDialog.open||selectionChat.busy||selectionChat.hasAnnotations||proofreadPdf?.active||gitJob?.status==='running'||gitJob?.status==='conflicts'||!!document.querySelector('dialog[open]')||editor.getOption('readOnly'),
   save:()=>compile(false),
@@ -3002,6 +3142,24 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                 'pdf_revision': server.pdf_revision, 'labels': server.labels if synced else {},
                 'citations': server.citations if synced else {}}
 
+    def overleaf_history(kind, targets):
+        """Snapshot project sources in the local history before and after Overleaf content is written."""
+        sources = {}
+        for target in targets:
+            file = Path(target).resolve()
+            if file.is_relative_to(root) and file.suffix.lower() in SOURCE_EXTENSIONS and file.is_file():
+                try:
+                    sources[file.relative_to(root).as_posix()] = snapshot(file)['source']
+                except (OSError, UnicodeError):
+                    continue
+        if sources:
+            try:
+                history.record_sources(sources, 'before-overleaf' if kind == 'before' else 'overleaf')
+            except sqlite3.Error as error:
+                # Never overwrite files without a restorable snapshot; a missing post-write checkpoint is recaptured by polling.
+                if kind == 'before':
+                    raise ValueError(f'无法写入本地历史快照，未写入 Overleaf 修改：{error}') from error
+
     def switch_source(candidate, entry=None):
         nonlocal path, history, main_file
         state = snapshot(candidate)
@@ -3065,7 +3223,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
             return True
 
         def do_GET(self):
-            if urlsplit(self.path).path in ('/', '/git/job') or self.path.startswith('/vendor/'):
+            if urlsplit(self.path).path in ('/', '/git/job', '/git/status') or self.path.startswith('/vendor/'):
                 self.get()
             elif self.path.startswith('/history/pdf/'):
                 with history_pdf_lock:
@@ -3112,9 +3270,25 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     self.reply(404, {'error':'同步任务不存在，请重新打开同步预览。'})
                 else:
                     self.reply(200, job.result)
+            elif route == '/git/status':
+                try:
+                    job, project = self.server.git_sync, root
+                    running = bool(job and job.result['status'] == 'running')
+                    fetch = parse_qs(parsed.query).get('fetch',[''])[0] == '1' and not running
+                    repo = Path(os.fsdecode(git_run(project, 'rev-parse', '--show-toplevel')).strip()).resolve()
+                    # Remote checks only fetch refs; they never touch documents, so they bypass the document lock.
+                    with self.server.git_status_lock:
+                        status = sync_status(repo, destination(repo), project, fetch=fetch)
+                    self.reply(200, {**status, 'fetched':fetch,
+                                     'job':job.result['status'] if job and job.root == project else None})
+                except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+                    self.reply(400, {'error': str(error)})
             elif route == '/git':
                 try:
-                    self.reply(200, {**git_preview(root), 'target':destination(git_preview(root)['root']), 'job':self.server.git_sync.result if self.server.git_sync and self.server.git_sync.root == root else None})
+                    preview = git_preview(root)
+                    target = destination(preview['root'])
+                    self.reply(200, {**preview, 'target':target, 'status':sync_status(preview['root'], target, root),
+                                     'job':self.server.git_sync.result if self.server.git_sync and self.server.git_sync.root == root else None})
                 except (OSError, ValueError, subprocess.TimeoutExpired) as error:
                     self.reply(400, {'error': str(error)})
             elif route == '/project-review':
@@ -3330,7 +3504,13 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
                     existing = self.server.git_sync
                     if existing and existing.result['status'] in ('running','conflicts'):
                         raise FileConflict('已有同步或未处理的冲突，请在同步窗口继续。')
-                    job = OverleafSync(root,data.get('signature'),data.get('message'),git_preview,git_commit,state_lock)
+                    if self.server.git_status_lock.locked():
+                        raise FileConflict('正在检查 Overleaf 更新，请稍后重试。')
+                    direction = data.get('direction', 'push')
+                    if direction not in ('push', 'pull'):
+                        raise ValueError('同步方向无效。')
+                    job = OverleafSync(root,data.get('signature'),data.get('message'),git_preview,git_commit,state_lock,
+                                       direction=direction,record=overleaf_history)
                     self.server.git_sync = job
                     job.start()
                     self.reply(200, {'id':job.id,'status':'running'})
@@ -3755,6 +3935,7 @@ def make_server(path, port=0, main_thread=None, project_root=None, preferences_p
     if server.preferences.read().get('latex-codex-proofread-project') == 'on':
         project_reviews()
     server.git_sync = None
+    server.git_status_lock = threading.Lock()
     server.chat = None
     server.history_summary = None
     server.history_pdfs = {}

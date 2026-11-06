@@ -10,7 +10,7 @@
     {
       "name": "latex-copilot",
       "description": "Local Overleaf-style LaTeX and Markdown editor in the Copilot Browser panel, with local TeX compilation and Copilot review edits.",
-      "version": "0.3.12-copilot.2",
+      "version": "0.3.12-copilot.3",
       "source": {
         "source": "github",
         "repo": "hxwork/codex-latex-editor",

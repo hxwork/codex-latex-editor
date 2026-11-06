@@ -1,5 +1,6 @@
-"""Overleaf sync with isolated three-way merge and read-only conflict analysis."""
+"""Two-way Overleaf sync with isolated three-way merges and read-only conflict analysis."""
 from collections import Counter
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 import json
 import os
@@ -14,10 +15,14 @@ import uuid
 
 from copilot_cli import copilot_answer, copilot_command, schema_instructions
 
+# Temporary sandbox commits are never pushed; a fixed identity avoids depending on Git user config.
+SANDBOX_IDENTITY = {'GIT_AUTHOR_NAME':'LaTeX Copilot','GIT_AUTHOR_EMAIL':'latex-copilot@localhost',
+                    'GIT_COMMITTER_NAME':'LaTeX Copilot','GIT_COMMITTER_EMAIL':'latex-copilot@localhost'}
 
-def run(root, *args, check=True, timeout=45):
+
+def run(root, *args, check=True, timeout=45, env=None):
     result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, timeout=timeout,
-                            env={**os.environ, 'GIT_TERMINAL_PROMPT':'0', 'GIT_LITERAL_PATHSPECS':'1'})
+                            env={**os.environ, 'GIT_TERMINAL_PROMPT':'0', 'GIT_LITERAL_PATHSPECS':'1', **(env or {})})
     if check and result.returncode:
         # Do not display an embedded authentication token, even in a Git error.
         error = result.stderr.decode('utf-8', 'replace').strip()
@@ -26,8 +31,8 @@ def run(root, *args, check=True, timeout=45):
     return result
 
 
-def output(root, *args):
-    return run(root, *args).stdout.decode('utf-8', 'replace').strip()
+def output(root, *args, **kwargs):
+    return run(root, *args, **kwargs).stdout.decode('utf-8', 'replace').strip()
 
 
 def destination(repo, allow_local=False):
@@ -45,6 +50,60 @@ def destination(repo, allow_local=False):
     return {'remote':remote, 'ref':ref, 'branch':branch,
             'tracking':f'refs/remotes/{remote}/{ref[len("refs/heads/"):]}',
             'project':urlsplit(fetch_url).path.strip('/') if not allow_local else 'test-project'}
+
+
+def sync_record_path(root):
+    return Path(root)/'.latex-codex'/'overleaf-sync.json'
+
+
+def read_sync_record(root):
+    try:
+        data = json.loads(sync_record_path(root).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {key:value for key,value in data.items() if key in ('push','pull','check') and isinstance(value,dict)}
+
+
+def write_sync_record(root, kind, **values):
+    """Remember the last push, pull and remote check; never stores remote URLs or credentials."""
+    record = read_sync_record(root)
+    record[kind] = {'time':datetime.now(timezone.utc).isoformat(timespec='seconds'), **values}
+    target = sync_record_path(root)
+    try:
+        target.parent.mkdir(exist_ok=True)
+        temporary = target.with_name(target.name + '.tmp')
+        temporary.write_text(json.dumps(record), encoding='utf-8')
+        os.replace(temporary, target)
+    except OSError:
+        pass  # Status metadata is advisory; it must not fail a completed sync.
+    return record
+
+
+def sync_status(repo, target, root, fetch=False):
+    """Ahead/behind counts against the Overleaf tracking ref; fetch=True checks the remote first."""
+    repo = Path(repo)
+    if fetch and target.get('tracking'):
+        run(repo,'fetch',target['remote'],f"{target['ref']}:{target['tracking']}",timeout=60)
+        write_sync_record(root,'check')
+    status = {'branch':target.get('branch'),'project':target.get('project'),'ahead':None,'behind':None,
+              'incoming':[],'incoming_files':[],'last':read_sync_record(root)}
+    if not target.get('tracking') or run(repo,'rev-parse','--verify','-q',target['tracking']+'^{commit}',check=False).returncode:
+        return status
+    ahead, behind = output(repo,'rev-list','--left-right','--count',f"HEAD...{target['tracking']}").split()
+    status['ahead'], status['behind'] = int(ahead), int(behind)
+    if status['behind']:
+        log = run(repo,'log','-z','--max-count=8','--format=%h%x1f%s%x1f%an%x1f%cI',f"HEAD..{target['tracking']}").stdout
+        for entry in log.decode('utf-8','replace').split('\0'):
+            if entry.strip():
+                commit, subject, author, date = (entry.strip('\n').split('\x1f') + ['']*4)[:4]
+                status['incoming'].append({'commit':commit,'subject':subject,'author':author,'time':date})
+        names = run(repo,'diff','--name-status','-z','--no-renames',f"HEAD...{target['tracking']}").stdout
+        fields = os.fsdecode(names).split('\0')
+        status['incoming_files'] = [{'status':fields[index],'path':fields[index+1]}
+                                    for index in range(0,len(fields)-1,2) if fields[index]][:200]
+    return status
 
 
 def normalize(text):
@@ -141,13 +200,18 @@ Classify minor ONLY when meaning is demonstrably unchanged (formatting, equivale
 
 
 class OverleafSync:
-    def __init__(self, root, signature, message, preview, commit, lock=None, analyser=analyse_with_codex, allow_local=False):
+    def __init__(self, root, signature, message, preview, commit, lock=None, analyser=analyse_with_codex, allow_local=False,
+                 direction='push', record=None):
+        if direction not in ('push','pull'):
+            raise ValueError('同步方向无效。')
         self.id = uuid.uuid4().hex
         self.root, self.signature, self.message = Path(root), signature, message
         self.preview, self.commit = preview, commit
         self.lock = lock or threading.Lock()
         self.analyser, self.allow_local = analyser, allow_local
-        self.result = {'id':self.id,'status':'running','phase':'正在获取 Overleaf 最新版本…'}
+        # record(kind, paths) snapshots editor history before and after a pull overwrites local files.
+        self.direction, self.record = direction, record
+        self.result = {'id':self.id,'direction':direction,'status':'running','phase':'正在获取 Overleaf 最新版本…'}
         self.directory = None
         self.thread = None
         self.local_signature = None
@@ -168,12 +232,12 @@ class OverleafSync:
         try:
             with self.lock:
                 if resolutions is None:
-                    self.prepare()
+                    self.prepare_pull() if self.direction == 'pull' else self.prepare()
                 else:
                     self.apply_resolutions(resolutions)
-        except (ValueError,OSError,subprocess.TimeoutExpired) as error:
-            self.result = {**self.result,'status':'error','error':str(error),
-                           'phase':'同步未完成；本地修改和提交已保留。'}
+        except Exception as error:  # Any failure must end the job; a stuck "running" state would lock the editor.
+            self.result = {**self.result,'status':'error','error':str(error) or type(error).__name__,
+                           'phase':'从 Overleaf 更新未完成；本地草稿已保留。' if self.direction == 'pull' else '同步未完成；本地修改和提交已保留。'}
             self.cleanup()
 
     def prepare(self):
@@ -293,7 +357,7 @@ class OverleafSync:
             run(self.sandbox,'add','--',name)
         if run(self.sandbox,'ls-files','--unmerged').stdout:
             raise ValueError('仍有未解决的冲突。')
-        self.finish()
+        self.finish_pull() if self.direction == 'pull' else self.finish()
 
     def finish(self):
         if self.preview(self.root)['signature'] != self.local_signature:
@@ -319,7 +383,154 @@ class OverleafSync:
         synced = run(self.repo,'merge-base','--is-ancestor',candidate,remote,check=False).returncode==0
         if not synced:
             raise ValueError('推送已返回，但远程验证未确认，需重新检查。')
-        self.result = {'id':self.id,'status':'done','phase':'已同步到 Overleaf',
+        write_sync_record(self.root,'push',commit=candidate[:8])
+        self.result = {'id':self.id,'direction':'push','status':'done','phase':'已同步到 Overleaf',
                        'commit':candidate[:8],'remote':remote[:8],'project':self.target['project'],
                        'remote_advanced':remote!=candidate}
+        self.cleanup()
+
+    # Sync from Overleaf: merge remote commits into the branch and the uncommitted drafts without pushing.
+    def isolated(self):
+        return ['-c','core.hooksPath='+str(Path(self.directory.name)/'no-hooks'),'-c','rerere.enabled=false']
+
+    def identity(self):
+        values = [run(self.repo,'config','--get',key,check=False).stdout.decode('utf-8','replace').strip()
+                  for key in ('user.name','user.email')]
+        if not all(values):
+            return dict(SANDBOX_IDENTITY)
+        return {'GIT_AUTHOR_NAME':values[0],'GIT_AUTHOR_EMAIL':values[1],
+                'GIT_COMMITTER_NAME':values[0],'GIT_COMMITTER_EMAIL':values[1]}
+
+    def drafts_tree(self):
+        """Tree of HEAD plus every working-tree edit, built in a private index; the real index is untouched."""
+        with tempfile.TemporaryDirectory(prefix='latex-overleaf-index-') as directory:
+            env = {'GIT_INDEX_FILE':str(Path(directory)/'index')}
+            run(self.repo,'read-tree',self.local_head,env=env)
+            run(self.repo,'add','--update',env=env,timeout=120)
+            # Untracked local files at incoming paths must take part in the merge instead of being overwritten.
+            extra = [name for name in self.incoming if os.path.lexists(self.repo/name)
+                     and run(self.repo,'cat-file','-e',f'{self.local_head}:{name}',check=False).returncode]
+            if extra:
+                run(self.repo,'add','--force','--',*extra,env=env)
+            return output(self.repo,'write-tree',env=env)
+
+    def prepare_pull(self):
+        initial = self.preview(self.root)
+        if initial['signature'] != self.signature:
+            raise ValueError('文件已变化，请重新打开同步预览。')
+        self.repo = Path(initial['root'])
+        self.target = destination(self.repo,self.allow_local)
+        self.local_head = output(self.repo,'rev-parse','HEAD')
+        run(self.repo,'fetch',self.target['remote'],f"{self.target['ref']}:{self.target['tracking']}",timeout=60)
+        self.local_signature = self.preview(self.root)['signature']
+        if self.local_signature != self.signature or output(self.repo,'rev-parse','HEAD') != self.local_head:
+            raise ValueError('获取远程更新期间本地文件已变化，请重新预览。')
+        self.remote_head = output(self.repo,'rev-parse',self.target['tracking'])
+        write_sync_record(self.root,'check')
+        done = {'id':self.id,'direction':'pull','status':'done','remote':self.remote_head[:8],'project':self.target['project']}
+        if run(self.repo,'merge-base','--is-ancestor',self.remote_head,self.local_head,check=False).returncode == 0:
+            write_sync_record(self.root,'pull',commit=self.local_head[:8])
+            self.result = {**done,'phase':'本地已包含 Overleaf 最新版本','up_to_date':True,'changed':[],
+                           'commit':self.local_head[:8],'drafts':bool(initial['files'])}
+            return
+        self.phase('正在把 Overleaf 修改合并到本地文稿…')
+        self.directory = tempfile.TemporaryDirectory(prefix='latex-overleaf-pull-')
+        self.sandbox = Path(self.directory.name)/'merge'
+        run(self.repo,'clone','--shared','--no-checkout','--',str(self.repo),str(self.sandbox))
+        if run(self.repo,'merge-base','--is-ancestor',self.local_head,self.remote_head,check=False).returncode == 0:
+            self.new_head = self.remote_head
+        else:
+            # Unpushed local commits stay; the new branch tip is an ordinary merge commit that must merge cleanly.
+            run(self.sandbox,'checkout','--detach',self.local_head)
+            merge = run(self.sandbox,*self.isolated(),'merge','--no-ff','--no-edit','-m','Merge Overleaf updates',
+                        self.remote_head,check=False,env=self.identity())
+            if merge.returncode:
+                raise ValueError('本地已有未推送的提交，且与 Overleaf 修改冲突；请改用“同步到 Overleaf”处理冲突并推送。')
+            self.new_head = output(self.sandbox,'rev-parse','HEAD')
+            run(self.repo,'fetch','--no-tags',str(self.sandbox),self.new_head)
+        names = run(self.repo,'diff','--name-only','-z','--no-renames',self.local_head,self.new_head).stdout
+        self.incoming = [name for name in os.fsdecode(names).split('\0') if name]
+        self.draft_tree = self.drafts_tree()
+        self.has_drafts = self.draft_tree != output(self.repo,'rev-parse',self.local_head+'^{tree}')
+        self.draft_commit = output(self.repo,'commit-tree',self.draft_tree,'-p',self.local_head,
+                                   '-m','Local drafts before Overleaf update',env=SANDBOX_IDENTITY)
+        run(self.sandbox,'checkout','--detach','--force',self.draft_commit)
+        merge = run(self.sandbox,*self.isolated(),'-c','merge.conflictStyle=diff3',
+                    'merge','--no-commit','--no-ff',self.new_head,check=False,env=SANDBOX_IDENTITY)
+        unmerged = run(self.sandbox,'diff','--name-only','--diff-filter=U','-z').stdout
+        names = [os.fsdecode(name) for name in unmerged.split(b'\0') if name]
+        if names:
+            self.collect_conflicts(names)
+            return
+        if merge.returncode:
+            raise ValueError(merge.stderr.decode('utf-8','replace'))
+        self.finish_pull()
+
+    def pull_targets(self, merged):
+        raw = run(self.repo,'diff-tree','-r','-z','--no-renames','--name-status',self.draft_commit,merged).stdout
+        fields = os.fsdecode(raw).split('\0')
+        targets = []
+        for status, name in ((fields[index],fields[index+1]) for index in range(0,len(fields)-1,2) if fields[index]):
+            parts = Path(name).parts
+            if Path(name).is_absolute() or '..' in parts or '.git' in parts:
+                raise ValueError(f'Overleaf 修改包含无效路径：{name}')
+            parent = self.repo
+            for part in parts[:-1]:
+                parent = parent/part
+                if parent.is_symlink() or (os.path.lexists(parent) and not parent.is_dir()):
+                    raise ValueError(f'无法安全写入 {name}：上级路径不是普通文件夹。')
+            target = self.repo/name
+            if target.is_symlink() or target.is_dir():
+                raise ValueError(f'无法安全写入 {name}：本地同名路径是链接或文件夹。')
+            mode = None
+            if status != 'D':
+                entry = run(self.repo,'ls-tree','-z',merged,'--',name).stdout
+                mode = entry.split(b' ',1)[0].decode('ascii','replace')
+                if mode not in ('100644','100755'):
+                    raise ValueError(f'Overleaf 修改含链接或子模块，无法自动写入：{name}')
+            targets.append((status,name,target,mode))
+        return targets
+
+    def finish_pull(self):
+        if self.preview(self.root)['signature'] != self.local_signature:
+            raise ValueError('同步期间本地文件已变化；尚未写入 Overleaf 修改，请重新同步。')
+        if run(self.sandbox,'rev-parse','--verify','-q','MERGE_HEAD',check=False).returncode == 0:
+            run(self.sandbox,*self.isolated(),'commit','--no-verify','-m','Merge Overleaf into local drafts',env=SANDBOX_IDENTITY)
+        merged = output(self.sandbox,'rev-parse','HEAD')
+        run(self.repo,'fetch','--no-tags',str(self.sandbox),merged)
+        if output(self.repo,'rev-parse','HEAD') != self.local_head:
+            raise ValueError('当前 Git 分支已变化，未写入 Overleaf 修改。')
+        if self.drafts_tree() != self.draft_tree:
+            raise ValueError('同步期间本地文件已变化；尚未写入 Overleaf 修改，请重新同步。')
+        targets = self.pull_targets(merged)
+        self.phase('正在写入 Overleaf 修改…')
+        if self.record:
+            self.record('before',[target for _,_,target,_ in targets])
+        for status, name, target, mode in targets:
+            if status == 'D':
+                if os.path.lexists(target):
+                    target.unlink()
+                parent = target.parent
+                while parent != self.repo and parent.is_dir() and not any(parent.iterdir()):
+                    parent.rmdir(); parent = parent.parent
+                continue
+            data = run(self.repo,'cat-file','--filters',f'{merged}:{name}').stdout
+            target.parent.mkdir(parents=True,exist_ok=True)
+            permissions = target.stat().st_mode & 0o777 if target.is_file() else 0o644
+            permissions = permissions | 0o111 if mode == '100755' else permissions & ~0o111
+            temporary = target.with_name(f'.{target.name}.overleaf-{self.id[:8]}')
+            temporary.write_bytes(data)
+            os.chmod(temporary,permissions)
+            os.replace(temporary,target)
+        # Move the branch with a compare-and-swap, then reset only the index; drafts stay as working-tree edits.
+        run(self.repo,'update-ref','-m','latex-copilot: update from Overleaf','HEAD',self.new_head,self.local_head)
+        run(self.repo,'reset','-q',check=False)
+        if run(self.repo,'diff','--cached','--quiet',check=False).returncode:
+            raise ValueError('Overleaf 修改已写入，但 Git 暂存区未能重置；请运行 git reset 后检查。')
+        if self.record:
+            self.record('after',[target for _,_,target,_ in targets])
+        write_sync_record(self.root,'pull',commit=self.new_head[:8])
+        self.result = {'id':self.id,'direction':'pull','status':'done','phase':'已从 Overleaf 更新',
+                       'up_to_date':False,'commit':self.new_head[:8],'remote':self.remote_head[:8],
+                       'project':self.target['project'],'changed':[name for _,name,_,_ in targets],'drafts':self.has_drafts}
         self.cleanup()

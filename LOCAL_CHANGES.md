@@ -3,7 +3,7 @@
 Fork: https://github.com/hxwork/codex-latex-editor
 Upstream: https://github.com/Fr0zenWatter/codex-latex-editor
 
-Includes the existing Cursor-style theme adjustments, one-click Overleaf synchronization, and three-way conflict analysis through the signed-in Codex CLI. Conflict analysis reports minor, critical, or uncertain changes with reasons and confidence; resolutions remain explicit user choices. Ordinary pushes preserve concurrent remote updates.
+Includes the existing Cursor-style theme adjustments, two-way Overleaf synchronization (Pull merges Overleaf changes into local drafts without pushing; Push commits and pushes), and three-way conflict analysis through the signed-in Copilot CLI. Conflict analysis reports minor, critical, or uncertain changes with reasons and confidence; resolutions remain explicit user choices. Ordinary pushes preserve concurrent remote updates.
 
 ## Local use
 

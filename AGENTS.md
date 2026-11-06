@@ -152,13 +152,17 @@ LaTeX 批注建议同时生成临时 PDF 校对预览：原选区全文标红，
 
 Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于同目录的 `test_*.cjs` 和 `test_*.mjs`。按变更选择现有检查；文档修改只需核对内容、路径和 `git diff --check`。
 
-## Overleaf 同步与冲突分析
+## Overleaf 双向同步与冲突分析
 
-顶部“同步到 Overleaf”沿用保存流程保存草稿，通过当前分支 upstream 的唯一 git.overleaf.com 远程执行 fetch、本地 commit、隔离三方合并、普通 push 和远程验证。只处理项目内选定的草稿，排除编译产物、历史库及本地配置；已有本地提交也可同步。禁止 force push，远程竞争更新拒绝推送并保留本地提交。不改变认证或全局 Git 设置。
+工具栏 Overleaf 分段按钮提供“拉取”（从 Overleaf 更新）与“推送”（同步到 Overleaf），打开同一个同步窗口的对应标签页；两者先沿用保存流程保存草稿，只使用当前分支 upstream 的唯一 git.overleaf.com 远程。窗口顶部状态卡显示本地待提交文件与未推送提交、Overleaf 新提交数（检查按钮执行 fetch）及上次拉取 / 推送时间；拉取页列出 Overleaf 新提交和涉及文件。页面加载后及每 10 分钟（页面可见、无任务时）只 fetch 检查一次，工具栏“拉取”角标显示新提交数；非 Overleaf 项目不再自动检查。fetch 只更新远程跟踪引用，不改文稿。最近一次检查、拉取、推送时间存于项目 `.latex-codex/overleaf-sync.json`，不含远程地址或凭据。
 
-三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Copilot CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。
+推送：fetch、本地 commit、隔离三方合并、普通 push 和远程验证。只处理项目内选定的草稿，排除编译产物、历史库及本地配置；已有本地提交也可同步。禁止 force push，远程竞争更新拒绝推送并保留本地提交。不改变认证或全局 Git 设置。
 
-实现为 scripts/overleaf_sync.py 与 editor.py。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。
+拉取：fetch 后，以私有临时索引把 HEAD 与工作区草稿（含 Overleaf 将新增路径上的未跟踪文件）快照为临时提交，在临时副本中与 Overleaf 版本三方合并；不写入真实暂存区、不 commit 草稿、不推送。本地无未推送提交时分支快进到 Overleaf；有未推送提交时生成普通本地合并提交，若这些提交本身与 Overleaf 冲突则拒绝并提示改用推送处理。写入前再次核对预览签名、HEAD 与草稿快照，任何变化都拒绝；写入前后把受影响的 `.tex` / `.md` 记入本地历史（`before-overleaf` / `overleaf`），快照失败不写入。只写合并结果相对草稿的改动（原子替换，拒绝链接、子模块、`.git` 及经由链接的路径），以比较交换更新分支后仅重置暂存区，草稿继续保留为未提交修改。完成后编辑器刷新源码、文件树并重新编译。
+
+三方合并在临时副本中完成，不在真实文稿写冲突标记。冲突逐项显示共同基线、本地和 Overleaf 文本；调用已有登录的 Copilot CLI 做只读语义分析，返回次要、关键、待核对、置信度、理由和建议。短改动不等于次要：否定、限定条件、数学、数值及技术含义的改变须核对；段落移动要检查上下文指代。分析失败保留三方文本与保守初判。分类不会自动接受修改。用户可按文件手动合并、保留本地或保留远程；未消除冲突标记拒绝继续。放弃本次合并只清除临时副本，保留真实文稿和本地提交。两个方向共用冲突界面；推送方向应用后推送，拉取方向只写本地。
+
+实现为 scripts/overleaf_sync.py（`OverleafSync(direction='push'|'pull')`、`sync_status`）与 editor.py（`GET /git`、`GET /git/status[?fetch=1]`（不占文稿锁）、`POST /git/sync` 的 `direction`）。新增运行模块 overleaf_sync.py 必须随原生包分发；若重新构建 DeepSeek 包，也须把该模块加入共享运行模块清单，本机未启用 DeepSeek。验证为 test_overleaf_sync.py（临时 bare 远程，不上传真实论文；覆盖推送与拉取）、test_git.py、test_http_server.py、test_ui.cjs、test_settings.mjs。
 
 Overleaf 上传默认排除 Markdown、脚本、未引用资源和杂项文件。TeX / 文献 / 样式作为论文源码；其他资源须由 TeX 显式引用。不将本地笔记随文稿上传。
 

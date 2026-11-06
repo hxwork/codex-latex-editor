@@ -1448,11 +1448,16 @@ Every square is nonnegative.
       if(url==='/git/job?id=sync1')return {id:'sync1',status:'done',commit:'abc123'};
       if(url==='/state')return {source:'draft',version:'saved',path:'paper.tex',name:'paper.tex'};};`,context);
   await element('#git-open').onclick();
-  assert.deepEqual(context.gitCalls,['/save','/git'],'Git preview must follow a successful draft save.');
+  assert.deepEqual(context.gitCalls,['/save','/git','/git/status?fetch=1'],'Git preview must follow a successful draft save, then check Overleaf.');
   assert.equal(element('#git-dialog').open,true);
+  assert.equal(element('#git-dialog').dataset.direction,'push');
+  assert.equal(element('#git-pane-push').hidden,false);assert.equal(element('#git-pane-pull').hidden,true);
   assert.equal(element('#git-submit').disabled,false);
+  assert.equal(element('#git-submit').textContent,'同步到 Overleaf');
+  assert.equal(element('#git-files').children.length,1);assert.equal(element('#git-files').children[0].children[0].textContent,'M');
   await element('#git-form').onsubmit({preventDefault(){}});
-  assert(context.gitCalls.includes('/git/sync'));assert(context.gitCalls.includes('/git/job?id=sync1'));assert.equal(context.gitCalls.at(-1),'/state');
+  assert(context.gitCalls.includes('/git/sync'));assert(context.gitCalls.includes('/git/job?id=sync1'));
+  assert.equal(context.gitCalls.at(-2),'/state');assert.equal(context.gitCalls.at(-1),'/git/status');
   assert.equal(element('#git-dialog').open,false);
   assert.equal(options.readOnly,false);
   await element('#git-open').onclick();context.gitDraft='changed after preview';
@@ -1480,6 +1485,35 @@ Every square is nonnegative.
   await element('#git-form').onsubmit({preventDefault(){}});
   assert(context.gitCalls.includes('/git/resolve'));
   assert.equal(element('#git-dialog').open,false);
+  // Sync from Overleaf opens the same dialog on the pull tab and sends direction=pull; changed files trigger a rebuild.
+  context.gitCalls=[];context.gitStatusData={branch:'main',project:'p',ahead:0,behind:2,last:{push:{time:new Date(Date.now()-120000).toISOString()}},
+    incoming:[{commit:'abc1234',subject:'Update on Overleaf.',author:'Coauthor',time:new Date().toISOString()}],incoming_files:[{status:'M',path:'main.tex'}]};
+  vm.runInContext(`busy=false;saved=editor.getValue();request=async(url,options)=>{gitCalls.push(url);
+      if(url==='/git')return {branch:'main',files:[],excluded:[],signature:'signature',status:gitStatusData};
+      if(url.startsWith('/git/status'))return {...gitStatusData,fetched:url.endsWith('fetch=1')};
+      if(url==='/git/sync'){const payload=JSON.parse(options.body);if(payload.direction!=='pull')throw new Error('Wrong direction');return {id:'pull1'};}
+      if(url==='/git/job?id=pull1')return {id:'pull1',direction:'pull',status:'done',commit:'abc1234',changed:['main.tex'],drafts:false,up_to_date:false};
+      if(url==='/state')return {source:'draft',version:'saved',path:'paper.tex',name:'paper.tex'};
+      if(url==='/compile'||url==='/save')return {version:'saved',ok:false,log:''};};`,context);
+  await element('#git-pull-open').onclick();
+  assert.equal(element('#git-dialog').open,true);
+  assert.equal(element('#git-dialog').dataset.direction,'pull');
+  assert.equal(element('#git-pane-pull').hidden,false);assert.equal(element('#git-pane-push').hidden,true);
+  assert.equal(element('#git-message').required,false,'Pulling needs no commit message.');
+  assert.equal(element('#git-submit').textContent,'从 Overleaf 更新');
+  await vm.runInContext('overleafChecking',context);
+  assert.equal(element('#git-pull-badge').hidden,false);assert.equal(element('#git-pull-badge').textContent,'2');
+  assert.equal(element('#git-stat-remote').textContent,'{count} 个新提交'.replace('{count}','2'));
+  assert.equal(element('#git-incoming').children.length,1);
+  assert.equal(element('#git-stat-last').textContent,'{count} 分钟前'.replace('{count}','2'));
+  element('#git-tab-push').onclick();assert.equal(element('#git-dialog').dataset.direction,'push');
+  element('#git-tab-pull').onclick();assert.equal(element('#git-dialog').dataset.direction,'pull');
+  await element('#git-form').onsubmit({preventDefault(){}});
+  assert(context.gitCalls.includes('/git/sync')&&context.gitCalls.includes('/git/job?id=pull1'));
+  assert.equal(element('#git-dialog').open,false);
+  assert(context.gitCalls.includes('/git/status'),'A finished pull refreshes the Overleaf status.');
+  assert(['/compile','/save'].includes(context.gitCalls.at(-1)),'Pulled changes rebuild the document.');
+  console.log('PASS: sync from Overleaf tab, status cards, incoming commits, badges, pull payload and post-pull rebuild');
   console.log('PASS: conflict severity/reason and three-way display, manual merge editor, selected resolution and post-sync refresh');
   console.log('PASS: Overleaf save-before-preview, sync job and polling, refreshed source, stale draft protection and failure preservation');
   console.log('PASS: source and PDF previous/next-change wiring, viewport boundaries, offscreen positions, project reviews, stale document exclusion and disabled proofreading');

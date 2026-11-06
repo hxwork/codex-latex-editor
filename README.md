@@ -8,6 +8,7 @@ Edit LaTeX and Markdown in the Codex side panel, with local previews, autosave a
 - **Send** proposes edits through your signed-in GitHub Copilot CLI; review each change with **Keep / Undo** in source and PDF.
 - Model and reasoning controls, writing styles and project chat.
 - Live Markdown previews and PDF compilation using your existing TeX installation.
+- Two-way Overleaf sync: **Overleaf · Pull** merges new Overleaf changes into your local files (drafts are kept, conflicts are analyzed first); **Push** commits and pushes to the project's Overleaf Git remote.
 
 Ask Codex: **Use latex-codex to open main.tex**, or launch directly:
 
