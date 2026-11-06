@@ -2,12 +2,14 @@
 from collections import Counter
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
+from functools import lru_cache
 import json
 import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 from urllib.parse import urlsplit
@@ -20,12 +22,39 @@ SANDBOX_IDENTITY = {'GIT_AUTHOR_NAME':'LaTeX Copilot','GIT_AUTHOR_EMAIL':'latex-
                     'GIT_COMMITTER_NAME':'LaTeX Copilot','GIT_COMMITTER_EMAIL':'latex-copilot@localhost'}
 
 
+KEYCHAIN_HELPERS = ('/Applications/Xcode.app/Contents/Developer/usr/libexec/git-core/git-credential-osxkeychain',
+                    '/Library/Developer/CommandLineTools/usr/libexec/git-core/git-credential-osxkeychain',
+                    '/opt/homebrew/opt/git/libexec/git-core/git-credential-osxkeychain',
+                    '/usr/local/opt/git/libexec/git-core/git-credential-osxkeychain')
+CREDENTIAL_HINT = '无法读取 Overleaf 凭据。请在终端对该项目运行一次 git fetch（用户名 git，密码为 Overleaf 的 Git token），由 Git 凭据助手保存后重试；macOS 会保存到钥匙串。'
+CREDENTIAL_ERRORS = re.compile(r'unable to get password|could not read (?:username|password)|terminal prompts disabled|authentication failed', re.I)
+
+
+@lru_cache(maxsize=1)
+def keychain_helper():
+    """macOS keychain helper for Git builds without one, such as the Git bundled with the Copilot app."""
+    if sys.platform != 'darwin':
+        return None
+    try:
+        exec_path = subprocess.run(['git', '--exec-path'], capture_output=True, timeout=10).stdout.decode('utf-8', 'replace').strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if exec_path and os.path.exists(os.path.join(exec_path, 'git-credential-osxkeychain')):
+        return None
+    return next((path for path in KEYCHAIN_HELPERS if os.access(path, os.X_OK)), None)
+
+
 def run(root, *args, check=True, timeout=45, env=None):
-    result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, timeout=timeout,
+    # Network commands may read the stored Overleaf token from the keychain; this never changes Git config.
+    helper = keychain_helper() if args and args[0] in ('fetch', 'push', 'ls-remote') else None
+    options = ['-c', 'credential.https://git.overleaf.com.helper=' + helper] if helper else []
+    result = subprocess.run(['git', *options, '-C', str(root), *args], capture_output=True, timeout=timeout,
                             env={**os.environ, 'GIT_TERMINAL_PROMPT':'0', 'GIT_LITERAL_PATHSPECS':'1', **(env or {})})
     if check and result.returncode:
         # Do not display an embedded authentication token, even in a Git error.
         error = result.stderr.decode('utf-8', 'replace').strip()
+        if CREDENTIAL_ERRORS.search(error):
+            raise ValueError(CREDENTIAL_HINT)
         error = re.sub(r'https://[^\s/@]+(?::[^\s/@]*)?@', 'https://', error)
         raise ValueError(error or 'Git command failed.')
     return result

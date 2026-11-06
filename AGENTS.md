@@ -156,6 +156,8 @@ Python 检查位于 `plugins/latex-codex/scripts/test_*.py`，前端检查位于
 
 工具栏 Overleaf 分段按钮提供“拉取”（从 Overleaf 更新）与“推送”（同步到 Overleaf），打开同一个同步窗口的对应标签页；两者先沿用保存流程保存草稿，只使用当前分支 upstream 的唯一 git.overleaf.com 远程。窗口顶部状态卡显示本地待提交文件与未推送提交、Overleaf 新提交数（检查按钮执行 fetch）及上次拉取 / 推送时间；拉取页列出 Overleaf 新提交和涉及文件。页面加载后及每 10 分钟（页面可见、无任务时）只 fetch 检查一次，工具栏“拉取”角标显示新提交数；非 Overleaf 项目不再自动检查。fetch 只更新远程跟踪引用，不改文稿。最近一次检查、拉取、推送时间存于项目 `.latex-codex/overleaf-sync.json`，不含远程地址或凭据。
 
+凭据：只使用 Git 凭据助手，编辑器从不读取或保存 token。首次使用需在终端对论文仓库运行一次 `git fetch`（用户名 `git`，密码为 Overleaf Git token）让凭据助手保存。从 Copilot 应用启动时继承应用自带的 Git，它不带 `git-credential-osxkeychain`；macOS 上 `overleaf_sync.run` 检测到当前 Git 缺少该程序时，只对 fetch / push / ls-remote 以 `-c credential.https://git.overleaf.com.helper=<系统 osxkeychain 绝对路径>` 临时读取钥匙串（依次查找 Xcode、Command Line Tools、Homebrew），不修改任何 Git 配置。凭据失败时显示带操作步骤的提示，而非原始 Git 报错。
+
 推送：fetch、本地 commit、隔离三方合并、普通 push 和远程验证。只处理项目内选定的草稿，排除编译产物、历史库及本地配置；已有本地提交也可同步。禁止 force push，远程竞争更新拒绝推送并保留本地提交。不改变认证或全局 Git 设置。
 
 拉取：fetch 后，以私有临时索引把 HEAD 与工作区草稿（含 Overleaf 将新增路径上的未跟踪文件）快照为临时提交，在临时副本中与 Overleaf 版本三方合并；不写入真实暂存区、不 commit 草稿、不推送。本地无未推送提交时分支快进到 Overleaf；有未推送提交时生成普通本地合并提交，若这些提交本身与 Overleaf 冲突则拒绝并提示改用推送处理。写入前再次核对预览签名、HEAD 与草稿快照，任何变化都拒绝；写入前后把受影响的 `.tex` / `.md` 记入本地历史（`before-overleaf` / `overleaf`），快照失败不写入。只写合并结果相对草稿的改动（原子替换，拒绝链接、子模块、`.git` 及经由链接的路径），以比较交换更新分支后仅重置暂存区，草稿继续保留为未提交修改。完成后编辑器刷新源码、文件树并重新编译。

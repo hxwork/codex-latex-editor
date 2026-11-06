@@ -31,6 +31,7 @@ export const english = {
   '同步期间本地文件已变化；尚未写入 Overleaf 修改，请重新同步。':'Local files changed during sync. Overleaf changes were not written; sync again.',
   '当前 Git 分支已变化，未写入 Overleaf 修改。':'The Git branch changed; Overleaf changes were not written.',
   'Copilot 冲突分析不可用；已保留三方文本和保守初判。':'Copilot conflict analysis is unavailable; the three-way text and conservative assessment are kept.',
+  '无法读取 Overleaf 凭据。请在终端对该项目运行一次 git fetch（用户名 git，密码为 Overleaf 的 Git token），由 Git 凭据助手保存后重试；macOS 会保存到钥匙串。':'Cannot read Overleaf credentials. Run git fetch once for this project in a terminal (username git, password your Overleaf Git token) so your Git credential helper saves it, then retry. On macOS it is stored in the Keychain.',
 
   'Git 提交':'Git commit',
   '提交说明':'Commit message',

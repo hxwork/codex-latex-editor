@@ -323,3 +323,30 @@ with TemporaryDirectory() as directory:
         finally:
             server.shutdown();server.server_close();server.build.cleanup();thread.join()
 print('PASS: HTTP status check, pull job, direction validation, refreshed state and history checkpoint')
+
+# Credentials: network commands borrow a system keychain helper for Git builds without one; failures explain the fix.
+import subprocess
+calls=[]
+def fake_run(command,**kwargs):
+    calls.append(command)
+    return subprocess.CompletedProcess(command,128,b'',b"fatal: could not read Username for 'https://git.overleaf.com': terminal prompts disabled")
+with patch('overleaf_sync.keychain_helper',return_value='/opt/keychain/git-credential-osxkeychain'),patch('overleaf_sync.subprocess.run',side_effect=fake_run):
+    try: run('/tmp','fetch','origin')
+    except ValueError as error: assert str(error)==overleaf_sync.CREDENTIAL_HINT
+    else: raise AssertionError('Credential failure accepted')
+    run('/tmp','status',check=False)
+assert calls[0][:3]==['git','-c','credential.https://git.overleaf.com.helper=/opt/keychain/git-credential-osxkeychain']
+assert calls[1][:2]==['git','-C'],'Only network commands receive the helper.'
+overleaf_sync.keychain_helper.cache_clear()
+with patch('overleaf_sync.sys.platform','linux'):
+    assert overleaf_sync.keychain_helper() is None
+overleaf_sync.keychain_helper.cache_clear()
+with patch('overleaf_sync.sys.platform','darwin'),patch('overleaf_sync.subprocess.run',return_value=subprocess.CompletedProcess([],0,b'/bundled/git-core\n',b'')),\
+     patch('overleaf_sync.os.path.exists',return_value=False),patch('overleaf_sync.os.access',side_effect=lambda path,mode:path==overleaf_sync.KEYCHAIN_HELPERS[1]):
+    assert overleaf_sync.keychain_helper()==overleaf_sync.KEYCHAIN_HELPERS[1]
+overleaf_sync.keychain_helper.cache_clear()
+with patch('overleaf_sync.sys.platform','darwin'),patch('overleaf_sync.subprocess.run',return_value=subprocess.CompletedProcess([],0,b'/system/git-core\n',b'')),\
+     patch('overleaf_sync.os.path.exists',return_value=True):
+    assert overleaf_sync.keychain_helper() is None,'A Git build with its own keychain helper is left unchanged.'
+overleaf_sync.keychain_helper.cache_clear()
+print('PASS: keychain helper fallback for bundled Git, network-only scope and actionable credential errors')
